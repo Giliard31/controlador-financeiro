@@ -19,7 +19,7 @@
   <!-- SDKs do Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, updateDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, doc, setDoc, updateDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCz3X_YrYt6o9UATBCiH2Gy_ojcf20Y2GU",
@@ -34,7 +34,7 @@
     const db = getFirestore(app);
 
     window.db = db;
-    window.firebaseModules = { collection, addDoc, onSnapshot, doc, setDoc, updateDoc, getDocs, query, where };
+    window.firebaseModules = { collection, addDoc, deleteDoc, onSnapshot, doc, setDoc, updateDoc, getDocs, query, where };
     
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
@@ -46,25 +46,25 @@
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col pt-16">
 
   <!-- Banner de Alerta Flutuante (Mensagens Urgentes do Admin) -->
-  <div id="admin-alert-banner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white p-4 shadow-xl border-b-4 border-amber-600 flex justify-between items-center transition-all duration-300">
+  <div id="admin-alert-banner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white p-3 shadow-xl border-b-4 border-amber-600 flex justify-between items-center transition-all duration-300">
     <div class="flex items-center space-x-3 max-w-3xl mx-auto">
       <svg class="w-6 h-6 shrink-0 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
       <div>
-        <h4 class="font-bold text-sm">Aviso Importante do Administrador:</h4>
+        <h4 class="font-bold text-xs">Aviso do Administrador:</h4>
         <p id="alert-text-content" class="text-xs text-amber-100"></p>
       </div>
     </div>
-    <button onclick="fecharAlertaAdmin()" class="bg-amber-700 hover:bg-amber-800 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition shadow">Entendido</button>
+    <button onclick="fecharAlertaAdmin()" class="bg-amber-700 hover:bg-amber-800 text-white font-bold px-3 py-1 rounded-md text-xs transition shadow">Entendido</button>
   </div>
 
-  <!-- Banner de Instalação do PWA Moderno -->
+  <!-- Banner de Instalação do PWA -->
   <div id="pwa-install-banner" class="hidden bg-blue-900 text-white p-3 px-4 flex justify-between items-center shadow-lg">
     <div class="flex items-center space-x-2">
       <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-6 h-6 rounded" alt="Logo">
-      <span class="text-xs font-medium">Instalar aplicativo Finanças Pro na tela inicial?</span>
+      <span class="text-xs font-medium">Instalar Finanças Pro na tela inicial?</span>
     </div>
     <button id="btn-install-pwa" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-3 py-1 rounded-md text-xs shadow transition">Instalar App</button>
   </div>
@@ -74,19 +74,19 @@
     Você está offline. Os dados locais serão sincronizados quando a conexão voltar.
   </div>
 
-  <!-- Cabeçalho Profissional -->
-  <header class="bg-blue-800 text-white shadow-md">
-    <div class="max-w-4xl mx-auto p-4 flex justify-between items-center">
+  <!-- Cabeçalho Fixo (Sticky Header) -->
+  <header class="fixed top-0 left-0 right-0 z-40 bg-blue-800 text-white shadow-md">
+    <div class="max-w-4xl mx-auto p-3 px-4 flex justify-between items-center">
       <div class="flex items-center space-x-3">
-        <div class="bg-blue-700 p-2 rounded-xl shadow-inner">
-          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-7 h-7 object-contain" alt="Ícone">
+        <div class="bg-blue-700 p-1.5 rounded-xl shadow-inner">
+          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-6 h-6 object-contain" alt="Ícone">
         </div>
         <div>
-          <h1 class="text-lg font-bold tracking-tight">Finanças Pro</h1>
-          <p id="user-role-badge" class="text-[11px] text-blue-200">Não conectado</p>
+          <h1 class="text-base font-bold tracking-tight">Finanças Pro</h1>
+          <p id="user-role-badge" class="text-[10px] text-blue-200">Não conectado</p>
         </div>
       </div>
-      <button id="btn-logout" onclick="logout()" class="hidden bg-blue-900 hover:bg-blue-950 text-xs px-3 py-1.5 rounded-lg transition border border-blue-700">Sair da Conta</button>
+      <button id="btn-logout" onclick="logout()" class="hidden bg-blue-900 hover:bg-blue-950 text-xs px-3 py-1.5 rounded-lg transition border border-blue-700">Sair</button>
     </div>
   </header>
 
@@ -161,11 +161,25 @@
     <!-- Painel Principal (Dashboard) -->
     <div id="sec-dashboard" class="hidden space-y-5">
 
+      <!-- Seletor de Mês Ativo / Histórico -->
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
+        <div>
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Visualizando Período</span>
+          <select id="filtro-mes" onchange="mudarMesSelecionado()" class="font-bold text-slate-800 text-sm bg-slate-100 p-1.5 rounded-lg border-0 focus:ring-2 focus:ring-blue-600">
+            <!-- Preenchido dinamicamente -->
+          </select>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">Status do Mês</span>
+          <span id="badge-mes-status" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">Mês Atual (Ativo)</span>
+        </div>
+      </div>
+
       <!-- Cards de Resumo Financeiro -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500 flex justify-between items-center">
           <div>
-            <span class="text-xs text-slate-500 font-medium">Receita Total</span>
+            <span class="text-xs text-slate-500 font-medium">Receita do Mês</span>
             <div class="text-2xl font-bold text-slate-800 mt-0.5" id="val-receita">R$ 0,00</div>
           </div>
           <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600">
@@ -175,7 +189,7 @@
 
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500 flex justify-between items-center">
           <div>
-            <span class="text-xs text-slate-500 font-medium">Total de Despesas</span>
+            <span class="text-xs text-slate-500 font-medium">Despesas do Mês</span>
             <div class="text-2xl font-bold text-slate-800 mt-0.5" id="val-despesas">R$ 0,00</div>
           </div>
           <div class="bg-rose-50 p-3 rounded-xl text-rose-600">
@@ -185,7 +199,7 @@
 
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600 flex justify-between items-center">
           <div>
-            <span class="text-xs text-slate-500 font-medium">Saldo Atual</span>
+            <span class="text-xs text-slate-500 font-medium">Saldo do Mês</span>
             <div class="text-2xl font-bold text-slate-800 mt-0.5" id="val-saldo">R$ 0,00</div>
           </div>
           <div class="bg-blue-50 p-3 rounded-xl text-blue-600">
@@ -204,16 +218,17 @@
           </form>
         </section>
 
-        <!-- Gerenciamento de Usuários -->
+        <!-- Gerenciamento de Usuários com Ações do Admin -->
         <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-          <h3 class="text-sm font-bold text-slate-800 mb-3">Gerenciamento de Acesso de Usuários</h3>
+          <h3 class="text-sm font-bold text-slate-800 mb-3">Gerenciamento de Usuários (Aprovar / Excluir)</h3>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
               <thead>
                 <tr class="border-b bg-slate-50 text-slate-600">
                   <th class="p-2.5">Nome</th>
                   <th class="p-2.5">E-mail</th>
-                  <th class="p-2.5 text-center">Aprovado / Liberado</th>
+                  <th class="p-2.5 text-center">Aprovado</th>
+                  <th class="p-2.5 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody id="tabela-usuarios" class="divide-y divide-slate-100"></tbody>
@@ -247,7 +262,7 @@
         </div>
 
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-          <h3 class="text-sm font-bold text-slate-800 mb-3">Histórico de Gastos em Tempo Real</h3>
+          <h3 class="text-sm font-bold text-slate-800 mb-3">Histórico de Gastos do Mês</h3>
           <div class="overflow-y-auto max-h-56 flex-grow pr-1">
             <ul id="lista-gastos" class="divide-y divide-slate-100 text-xs"></ul>
           </div>
@@ -261,7 +276,6 @@
             <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
             <h3 class="text-sm font-bold text-slate-800">Central de Mensagens e Suporte</h3>
           </div>
-          <!-- Indicador se Admin está online -->
           <div id="admin-status-indicator" class="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
             <span class="w-2 h-2 rounded-full bg-slate-400" id="status-dot"></span>
             <span id="status-text">Admin Offline</span>
@@ -271,7 +285,6 @@
         <div id="chat-messages" class="h-40 overflow-y-auto border border-slate-100 p-3 rounded-xl bg-slate-50 space-y-2 text-xs"></div>
 
         <form onsubmit="enviarMensagem(event)" class="space-y-2">
-          <!-- Opções exclusivas do Admin para direcionar destinatário -->
           <div id="admin-chat-controls" class="hidden flex gap-2 items-center text-xs">
             <span class="font-semibold text-slate-600">Enviar para:</span>
             <select id="chat-destinatario" class="p-1.5 border border-slate-200 rounded-lg bg-white flex-grow">
@@ -290,10 +303,14 @@
   </main>
 
   <script>
-    const ADMIN_EMAIL = "giliard@admin.com"; // Defina aqui o seu e-mail de admin principal
+    const ADMIN_EMAIL = "giliard@admin.com"; 
     let currentUser = JSON.parse(localStorage.getItem('pwa_user')) || null;
     let chartInstance = null;
-    let appData = { receita: 0, gastos: [], mensagens: [], usuarios: [] };
+    let appData = { receitas: {}, gastos: [], mensagens: [], usuarios: [] };
+    
+    // Mês atual padrão formatado como YYYY-MM
+    const dataAtualObj = new Date();
+    let mesSelecionado = `${dataAtualObj.getFullYear()}-${String(dataAtualObj.getMonth() + 1).padStart(2, '0')}`;
 
     window.addEventListener('firebase-ready', () => {
       if (currentUser) {
@@ -309,8 +326,6 @@
       if (!currentUser) {
         document.getElementById('sec-login').classList.remove('hidden');
       }
-      
-      // Atualiza status online ao fechar/sair da página
       window.addEventListener('beforeunload', () => {
         if (currentUser) atualizarPresencaOnline(false);
       });
@@ -333,7 +348,6 @@
       const senha = document.getElementById('cad-senha').value.trim();
 
       const { collection, addDoc, getDocs, query, where } = window.firebaseModules;
-      
       const q = query(collection(window.db, "usuarios"), where("email", "==", email));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
@@ -342,18 +356,15 @@
       }
 
       const eAdmin = (email === ADMIN_EMAIL);
-
       await addDoc(collection(window.db, "usuarios"), {
-        nome,
-        email,
-        senha,
+        nome, email, senha,
         aprovado: eAdmin,
         isAdmin: eAdmin,
         online: false,
         criadoEm: Date.now()
       });
 
-      alert(eAdmin ? "Cadastro de Administrador realizado com sucesso!" : "Cadastro realizado! Aguarde a liberação do Administrador.");
+      alert(eAdmin ? "Cadastro de Admin realizado!" : "Cadastro realizado! Aguarde liberação do Administrador.");
       alternarTelaCadastro(false);
     }
 
@@ -367,7 +378,7 @@
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        alert("E-mail não encontrado. Faça o cadastro primeiro!");
+        alert("E-mail não encontrado!");
         return;
       }
 
@@ -392,9 +403,7 @@
       try {
         const { doc, updateDoc } = window.firebaseModules;
         await updateDoc(doc(window.db, "usuarios", currentUser.id), { online: status });
-      } catch (err) {
-        console.error("Erro ao atualizar status online:", err);
-      }
+      } catch (err) {}
     }
 
     function verificarSessaoAtiva() {
@@ -402,14 +411,12 @@
       document.getElementById('sec-pendente').classList.add('hidden');
 
       const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
-
       if (!isAdmin && !currentUser.aprovado) {
         document.getElementById('sec-pendente').classList.remove('hidden');
         document.getElementById('btn-logout').classList.remove('hidden');
         document.getElementById('user-role-badge').innerText = `${currentUser.email} (Pendente)`;
         return;
       }
-
       showDashboard();
     }
 
@@ -440,19 +447,22 @@
       const { collection, onSnapshot, doc } = window.firebaseModules;
       const db = window.db;
 
+      // Ouve receitas por mês
       onSnapshot(doc(db, "financeiro", "config"), (docSnap) => {
         if (docSnap.exists()) {
-          appData.receita = docSnap.data().receita || 0;
+          appData.receitas = docSnap.data().receitas || {};
           renderUI();
         }
       });
 
+      // Ouve todos os gastos históricos
       onSnapshot(collection(db, "gastos"), (snapshot) => {
         appData.gastos = [];
         snapshot.forEach((docSnap) => {
           appData.gastos.push({ id: docSnap.id, ...docSnap.data() });
         });
         appData.gastos.sort((a, b) => a.timestamp - b.timestamp);
+        atualizarSelectMeses();
         renderUI();
       });
 
@@ -471,20 +481,153 @@
         snapshot.forEach((docSnap) => {
           const u = { id: docSnap.id, ...docSnap.data() };
           appData.usuarios.push(u);
-          if ((u.email === ADMIN_EMAIL || u.isAdmin) && u.online) {
-            adminOnline = true;
-          }
+          if ((u.email === ADMIN_EMAIL || u.isAdmin) && u.online) adminOnline = true;
         });
 
-        // Atualiza indicador de Admin Online na tela do usuário
         atualizarIndicadorAdminOnline(adminOnline);
-
         const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
         if (isAdmin) {
           renderizarTabelaUsuarios();
           atualizarSelectDestinatarios();
         }
       });
+    }
+
+    function atualizarSelectMeses() {
+      const select = document.getElementById('filtro-mes');
+      if (!select) return;
+      
+      // Identifica todos os meses presentes nos gastos + mês atual
+      const mesesSet = new Set();
+      mesesSet.add(mesSelecionado);
+      appData.gastos.forEach(g => {
+        if (g.mesAno) mesesSet.add(g.mesAno);
+      });
+
+      const mesesOrdenados = Array.from(mesesSet).sort().reverse();
+      select.innerHTML = '';
+      
+      mesesOrdenados.forEach(m => {
+        const [ano, mes] = m.split('-');
+        const nomeMes = new Date(ano, mes - 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.innerText = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
+        if (m === mesSelecionado) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function mudarMesSelecionado() {
+      mesSelecionado = document.getElementById('filtro-mes').value;
+      const mesAtualReal = `${dataAtualObj.getFullYear()}-${String(dataAtualObj.getMonth() + 1).padStart(2, '0')}`;
+      const badge = document.getElementById('badge-mes-status');
+      
+      if (mesSelecionado === mesAtualReal) {
+        badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+        badge.innerText = "Mês Atual (Ativo)";
+      } else {
+        badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-200 text-slate-700";
+        badge.innerText = "Histórico Passado";
+      }
+      renderUI();
+    }
+
+    async function salvarReceita(e) {
+      e.preventDefault();
+      const valor = parseFloat(document.getElementById('input-receita').value);
+      if (isNaN(valor)) return;
+
+      const { doc, setDoc } = window.firebaseModules;
+      appData.receitas[mesSelecionado] = valor;
+      await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas });
+      document.getElementById('input-receita').value = '';
+    }
+
+    async function adicionarGasto(e) {
+      e.preventDefault();
+      const nome = document.getElementById('gasto-nome').value.trim();
+      const valor = parseFloat(document.getElementById('gasto-valor').value);
+      if (!nome || isNaN(valor)) return;
+
+      const { collection, addDoc } = window.firebaseModules;
+      await addDoc(collection(window.db, "gastos"), {
+        usuario: currentUser.email,
+        nome: nome,
+        valor: valor,
+        mesAno: mesSelecionado,
+        timestamp: Date.now(),
+        data: new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      });
+
+      document.getElementById('gasto-nome').value = '';
+      document.getElementById('gasto-valor').value = '';
+    }
+
+    // Apenas Admin pode apagar gasto
+    async function excluirGasto(idGasto) {
+      if (!confirm("Deseja realmente apagar este gasto do histórico?")) return;
+      const { doc, deleteDoc } = window.firebaseModules;
+      await deleteDoc(doc(window.db, "gastos", idGasto));
+    }
+
+    // Apenas Admin pode excluir usuário
+    async function excluirUsuario(idUsuario) {
+      if (!confirm("Deseja banir/excluir este usuário do sistema?")) return;
+      const { doc, deleteDoc } = window.firebaseModules;
+      await deleteDoc(doc(window.db, "usuarios", idUsuario));
+    }
+
+    async function alterarStatusUsuario(idUsuario, novoStatus) {
+      const { doc, updateDoc } = window.firebaseModules;
+      await updateDoc(doc(window.db, "usuarios", idUsuario), { aprovado: novoStatus });
+    }
+
+    function renderizarTabelaUsuarios() {
+      const tbody = document.getElementById('tabela-usuarios');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      appData.usuarios.forEach(u => {
+        if (u.email === ADMIN_EMAIL || u.isAdmin) return;
+        const tr = document.createElement('tr');
+        tr.className = "border-b";
+        tr.innerHTML = `
+          <td class="p-2.5 font-medium">${u.nome}</td>
+          <td class="p-2.5 text-slate-500">${u.email}</td>
+          <td class="p-2.5 text-center">
+            <input type="checkbox" ${u.aprovado ? 'checked' : ''} onchange="alterarStatusUsuario('${u.id}', this.checked)" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
+          </td>
+          <td class="p-2.5 text-center">
+            <button onclick="excluirUsuario('${u.id}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-2.5 py-1 rounded-lg font-bold text-[11px] transition">Excluir</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function enviarMensagem(e) {
+      e.preventDefault();
+      const txt = document.getElementById('chat-input').value.trim();
+      if (!txt) return;
+
+      const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
+      let destinatario = isAdmin ? document.getElementById('chat-destinatario').value : ADMIN_EMAIL;
+
+      const { collection, addDoc } = window.firebaseModules;
+      await addDoc(collection(window.db, "mensagens"), {
+        autor: currentUser.email,
+        destinatario: destinatario,
+        texto: txt,
+        timestamp: Date.now(),
+        hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      });
+
+      document.getElementById('chat-input').value = '';
+    }
+
+    function fecharAlertaAdmin() {
+      document.getElementById('admin-alert-banner').classList.add('hidden');
     }
 
     function atualizarIndicadorAdminOnline(online) {
@@ -508,7 +651,6 @@
       const select = document.getElementById('chat-destinatario');
       if (!select) return;
       select.innerHTML = '<option value="todos">Todos os Usuários (Aviso Geral)</option>';
-      
       appData.usuarios.forEach(u => {
         if (!(u.email === ADMIN_EMAIL || u.isAdmin)) {
           const opt = document.createElement('option');
@@ -519,118 +661,41 @@
       });
     }
 
-    async function alterarStatusUsuario(idUsuario, novoStatus) {
-      const { doc, updateDoc } = window.firebaseModules;
-      await updateDoc(doc(window.db, "usuarios", idUsuario), { aprovado: novoStatus });
-    }
-
-    function renderizarTabelaUsuarios() {
-      const tbody = document.getElementById('tabela-usuarios');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-
-      appData.usuarios.forEach(u => {
-        if (u.email === ADMIN_EMAIL || u.isAdmin) return;
-        const tr = document.createElement('tr');
-        tr.className = "border-b";
-        tr.innerHTML = `
-          <td class="p-2.5 font-medium">${u.nome}</td>
-          <td class="p-2.5 text-slate-500">${u.email}</td>
-          <td class="p-2.5 text-center">
-            <input type="checkbox" ${u.aprovado ? 'checked' : ''} onchange="alterarStatusUsuario('${u.id}', this.checked)" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function salvarReceita(e) {
-      e.preventDefault();
-      const valor = parseFloat(document.getElementById('input-receita').value);
-      if (isNaN(valor)) return;
-
-      const { doc, setDoc } = window.firebaseModules;
-      await setDoc(doc(window.db, "financeiro", "config"), { receita: valor });
-      document.getElementById('input-receita').value = '';
-    }
-
-    async function adicionarGasto(e) {
-      e.preventDefault();
-      const nome = document.getElementById('gasto-nome').value.trim();
-      const valor = parseFloat(document.getElementById('gasto-valor').value);
-      if (!nome || isNaN(valor)) return;
-
-      const { collection, addDoc } = window.firebaseModules;
-      await addDoc(collection(window.db, "gastos"), {
-        usuario: currentUser.email,
-        nome: nome,
-        valor: valor,
-        timestamp: Date.now(),
-        data: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-      });
-
-      document.getElementById('gasto-nome').value = '';
-      document.getElementById('gasto-valor').value = '';
-    }
-
-    async function enviarMensagem(e) {
-      e.preventDefault();
-      const txt = document.getElementById('chat-input').value.trim();
-      if (!txt) return;
-
-      const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
-      let destinatario = "todos";
-
-      if (isAdmin) {
-        destinatario = document.getElementById('chat-destinatario').value;
-      } else {
-        destinatario = ADMIN_EMAIL; // Usuário comum envia direto para o Admin
-      }
-
-      const { collection, addDoc } = window.firebaseModules;
-      await addDoc(collection(window.db, "mensagens"), {
-        autor: currentUser.email,
-        destinatario: destinatario,
-        texto: txt,
-        timestamp: Date.now(),
-        hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-      });
-
-      document.getElementById('chat-input').value = '';
-    }
-
-    function fecharAlertaAdmin() {
-      document.getElementById('admin-alert-banner').classList.add('hidden');
-    }
-
     function renderUI() {
-      const totalDespesas = appData.gastos.reduce((acc, item) => acc + item.valor, 0);
-      const saldo = appData.receita - totalDespesas;
+      const receitaMes = appData.receitas[mesSelecionado] || 0;
+      
+      // Filtra gastos apenas do mês selecionado
+      const gastosMes = appData.gastos.filter(g => g.mesAno === mesSelecionado);
+      const totalDespesas = gastosMes.reduce((acc, item) => acc + item.valor, 0);
+      const saldo = receitaMes - totalDespesas;
 
-      document.getElementById('val-receita').innerText = `R$ ${appData.receita.toFixed(2)}`;
+      document.getElementById('val-receita').innerText = `R$ ${receitaMes.toFixed(2)}`;
       document.getElementById('val-despesas').innerText = `R$ ${totalDespesas.toFixed(2)}`;
       document.getElementById('val-saldo').innerText = `R$ ${saldo.toFixed(2)}`;
 
+      const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
       const listaEl = document.getElementById('lista-gastos');
       listaEl.innerHTML = '';
-      appData.gastos.slice().reverse().forEach(gasto => {
+      
+      gastosMes.slice().reverse().forEach(gasto => {
         const li = document.createElement('li');
-        li.className = "py-2.5 flex justify-between items-center";
+        li.className = "py-2.5 flex justify-between items-center border-b border-slate-100 last:border-0";
         li.innerHTML = `
           <div>
             <span class="font-bold text-slate-700">${gasto.nome}</span>
-            <span class="block text-[10px] text-slate-400">Por: ${gasto.usuario} às ${gasto.data}</span>
+            <span class="block text-[10px] text-slate-400">Por: ${gasto.usuario} em ${gasto.data}</span>
           </div>
-          <span class="font-semibold text-rose-600">- R$ ${gasto.valor.toFixed(2)}</span>
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-rose-600">- R$ ${gasto.valor.toFixed(2)}</span>
+            ${isAdmin ? `<button onclick="excluirGasto('${gasto.id}')" class="text-rose-400 hover:text-rose-600 font-bold p-1" title="Apagar Gasto">✕</button>` : ''}
+          </div>
         `;
         listaEl.appendChild(li);
       });
 
-      // Filtro e Exibição de Mensagens (Chat privado ou para todos)
+      // Chat
       const chatEl = document.getElementById('chat-messages');
       chatEl.innerHTML = '';
-      const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
-
       let ultimaMensagemAdminUrgente = null;
 
       appData.mensagens.forEach(m => {
@@ -643,7 +708,6 @@
           div.innerHTML = `<div class="font-bold text-[10px] opacity-80 mb-0.5">${m.autor} ${m.destinatario !== 'todos' ? '(Privado)' : ''} - ${m.hora}</div><div>${m.texto}</div>`;
           chatEl.appendChild(div);
 
-          // Se o admin mandou uma mensagem para todos ou para este usuário e ele não é o autor, exibe o banner flutuante no topo
           if (!isAdmin && m.autor === ADMIN_EMAIL && (m.destinatario === "todos" || m.destinatario === currentUser.email)) {
             ultimaMensagemAdminUrgente = m.texto;
           }
@@ -656,13 +720,13 @@
       }
 
       chatEl.scrollTop = chatEl.scrollHeight;
-      renderChart();
+      renderChart(gastosMes);
     }
 
-    function renderChart() {
+    function renderChart(gastosMes) {
       const ctx = document.getElementById('chartDespesas').getContext('2d');
       const agrupado = {};
-      appData.gastos.forEach(g => {
+      gastosMes.forEach(g => {
         agrupado[g.nome] = (agrupado[g.nome] || 0) + g.valor;
       });
 
@@ -674,7 +738,7 @@
       chartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: labels.length ? labels : ['Sem Gastos'],
+          labels: labels.length ? labels : ['Sem Gastos neste mês'],
           datasets: [{
             data: valores.length ? valores : [1],
             backgroundColor: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'],
@@ -697,19 +761,11 @@
       if (!navigator.onLine) banner.classList.remove('hidden');
     }
 
-    // Configuração do PWA atualizada e sem avisos de formato antigo
     function initManifest() {
       const manifestData = {
-        name: "Finanças Pro",
-        short_name: "Finanças",
-        start_url: "./",
-        display: "standalone",
-        background_color: "#ffffff",
-        theme_color: "#1e40af",
-        icons: [
-          { src: "https://cdn-icons-png.flaticon.com/512/3135/3135706.png", sizes: "192x192", type: "image/png" },
-          { src: "https://cdn-icons-png.flaticon.com/512/3135/3135706.png", sizes: "512x512", type: "image/png" }
-        ]
+        name: "Finanças Pro", short_name: "Finanças", start_url: "./", display: "standalone",
+        background_color: "#ffffff", theme_color: "#1e40af",
+        icons: [{ src: "https://cdn-icons-png.flaticon.com/512/3135/3135706.png", sizes: "192x192", type: "image/png" }]
       };
       const blob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
       document.getElementById('manifest-placeholder').setAttribute('href', URL.createObjectURL(blob));
