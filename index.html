@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Finanças Pro - Controle Financeiro</title>
   
   <meta name="theme-color" content="#1e40af">
@@ -36,68 +36,69 @@
   </script>
 
   <style>
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { touch-action: pan-x pan-y; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: #f8fafc; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col pt-16">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col pt-16 overflow-x-hidden">
 
   <!-- Banner de Alerta Flutuante (Admin) -->
-  <div id="admin-alert-banner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white p-3 shadow-xl border-b-4 border-amber-600 flex justify-between items-center">
-    <div class="flex items-center space-x-3 max-w-3xl mx-auto">
-      <svg class="w-6 h-6 shrink-0 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-      <div>
-        <h4 class="font-bold text-xs">Aviso do Administrador:</h4>
-        <p id="alert-text-content" class="text-xs text-amber-100"></p>
-      </div>
+  <div id="admin-alert-banner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white p-3 shadow-xl border-b-4 border-amber-600 flex justify-between items-center text-xs">
+    <div class="flex items-center space-x-2 max-w-xl mx-auto truncate px-2">
+      <span class="font-bold shrink-0">Aviso:</span>
+      <p id="alert-text-content" class="truncate"></p>
     </div>
-    <button onclick="fecharAlertaAdmin()" class="bg-amber-700 hover:bg-amber-800 text-white font-bold px-3 py-1 rounded-md text-xs">Entendido</button>
+    <button onclick="fecharAlertaAdmin()" class="bg-amber-700 font-bold px-2.5 py-1 rounded">Ok</button>
   </div>
 
-  <!-- Menu Lateral Deslizante (Gaveta / Drawer) -->
+  <!-- Menu Lateral Deslizante (Gaveta / Drawer) com Histórico e Aprovação de Usuários -->
   <div id="drawer-overlay" class="fixed inset-0 bg-black/50 z-50 hidden transition-opacity" onclick="fecharMenuLateral()"></div>
-  <div id="drawer-menu" class="fixed top-0 left-0 bottom-0 w-80 bg-white z-50 shadow-2xl transform -translate-x-full transition-transform duration-300 flex flex-col">
-    <div class="bg-blue-800 text-white p-4 flex justify-between items-center">
+  <div id="drawer-menu" class="fixed top-0 left-0 bottom-0 w-4/5 max-w-xs bg-white z-50 shadow-2xl transform -translate-x-full transition-transform duration-300 flex flex-col">
+    <div class="bg-blue-800 text-white p-4 flex justify-between items-center shrink-0">
       <div class="flex items-center space-x-2">
-        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-7 h-7">
-        <h2 class="font-bold text-base">Menu & Histórico</h2>
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-6 h-6">
+        <h2 class="font-bold text-sm">Menu & Gerenciamento</h2>
       </div>
-      <button onclick="fecharMenuLateral()" class="text-white hover:text-slate-200 font-bold text-lg p-1">✕</button>
+      <button onclick="fecharMenuLateral()" class="text-white font-bold text-lg p-1">✕</button>
     </div>
     
-    <div class="p-4 overflow-y-auto flex-grow space-y-4 text-xs">
+    <div class="p-4 overflow-y-auto flex-grow space-y-5 text-xs">
       <div>
-        <span class="font-bold text-slate-400 uppercase tracking-wider block mb-2">Mês Selecionado Atualmente</span>
-        <div id="drawer-mes-atual" class="p-3 bg-blue-50 border border-blue-200 rounded-xl font-bold text-blue-900 text-sm"></div>
+        <span class="font-bold text-slate-400 uppercase tracking-wider block mb-1">Mês Selecionado</span>
+        <div id="drawer-mes-atual" class="p-2.5 bg-blue-50 border border-blue-200 rounded-xl font-bold text-blue-900 text-xs truncate"></div>
       </div>
 
       <div>
-        <span class="font-bold text-slate-400 uppercase tracking-wider block mb-2">Histórico de Meses Anteriores</span>
-        <div id="drawer-lista-meses" class="space-y-1.5">
-          <!-- Preenchido via script -->
-        </div>
+        <span class="font-bold text-slate-400 uppercase tracking-wider block mb-1">Histórico de Meses</span>
+        <div id="drawer-lista-meses" class="space-y-1"></div>
+      </div>
+
+      <!-- Área de Aprovação de Usuários (Visível Apenas para o Admin dentro do Menu) -->
+      <div id="drawer-admin-usuarios" class="hidden border-t pt-4 space-y-2">
+        <span class="font-bold text-slate-400 uppercase tracking-wider block">Aprovar Usuários</span>
+        <div id="drawer-lista-usuarios" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
       </div>
     </div>
 
-    <div class="p-4 border-t border-slate-100 text-center text-[10px] text-slate-400">
-      Finanças Pro PWA • Sistema Seguro
+    <div class="p-3 border-t text-center text-[10px] text-slate-400 shrink-0">
+      Finanças Pro PWA
     </div>
   </div>
 
   <!-- Botão Flutuante do Chat -->
-  <div class="fixed bottom-5 right-5 z-40">
-    <button onclick="alternarJanelaChat()" id="btn-chat-toggle" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition hover:scale-105">
+  <div class="fixed bottom-4 right-4 z-40">
+    <button onclick="alternarJanelaChat()" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
     </button>
   </div>
 
-  <!-- Janela Flutuante do Chat (Oculta por padrão) -->
-  <div id="janela-chat" class="hidden fixed bottom-20 right-5 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 flex flex-col overflow-hidden">
-    <div class="bg-indigo-600 text-white p-3 flex justify-between items-center text-xs">
+  <!-- Janela do Chat -->
+  <div id="janela-chat" class="hidden fixed bottom-16 right-3 left-3 sm:left-auto sm:right-4 sm:w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 flex flex-col overflow-hidden max-w-sm mx-auto">
+    <div class="bg-indigo-600 text-white p-3 flex justify-between items-center text-xs shrink-0">
       <div class="flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
         <span class="font-bold">Suporte e Mensagens</span>
       </div>
       <div class="flex items-center gap-2">
@@ -105,22 +106,20 @@
           <span class="w-1.5 h-1.5 rounded-full bg-slate-300" id="status-dot"></span>
           <span id="status-text">Offline</span>
         </div>
-        <button onclick="alternarJanelaChat()" class="text-white hover:text-indigo-200 font-bold">✕</button>
+        <button onclick="alternarJanelaChat()" class="text-white font-bold p-1">✕</button>
       </div>
     </div>
-
-    <div id="chat-messages" class="h-64 overflow-y-auto p-3 bg-slate-50 space-y-2 text-xs flex-grow"></div>
-
-    <form onsubmit="enviarMensagem(event)" class="p-3 bg-white border-t border-slate-100 space-y-2">
+    <div id="chat-messages" class="h-52 overflow-y-auto p-3 bg-slate-50 space-y-2 text-xs flex-grow"></div>
+    <form onsubmit="enviarMensagem(event)" class="p-2.5 bg-white border-t space-y-2 shrink-0">
       <div id="admin-chat-controls" class="hidden flex gap-1 items-center text-[11px]">
         <span class="font-semibold text-slate-600">Para:</span>
-        <select id="chat-destinatario" class="p-1 border border-slate-200 rounded bg-white flex-grow text-[11px]">
+        <select id="chat-destinatario" class="p-1 border rounded bg-white flex-grow text-[11px]">
           <option value="todos">Todos (Geral)</option>
         </select>
       </div>
-      <div class="flex gap-1.5">
-        <input type="text" id="chat-input" placeholder="Digite sua mensagem..." required class="flex-grow p-2 border border-slate-200 rounded-xl text-xs bg-slate-50">
-        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-2 rounded-xl text-xs">Enviar</button>
+      <div class="flex gap-1">
+        <input type="text" id="chat-input" placeholder="Mensagem..." required class="flex-grow p-2 border rounded-xl text-xs bg-slate-50">
+        <button type="submit" class="bg-indigo-600 text-white font-semibold px-3 py-2 rounded-xl text-xs">Enviar</button>
       </div>
     </form>
   </div>
@@ -128,169 +127,142 @@
   <!-- Cabeçalho Fixo -->
   <header class="fixed top-0 left-0 right-0 z-40 bg-blue-800 text-white shadow-md">
     <div class="max-w-4xl mx-auto p-3 px-4 flex justify-between items-center">
-      <div class="flex items-center space-x-3">
-        <!-- Botão de Três Barrinhas para abrir o Menu Lateral -->
-        <button onclick="abrirMenuLateral()" class="text-white hover:text-blue-200 focus:outline-none p-1">
+      <div class="flex items-center space-x-2 truncate">
+        <button onclick="abrirMenuLateral()" class="text-white focus:outline-none p-1 shrink-0">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
-        <div class="flex items-center space-x-2">
-          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-6 h-6 object-contain">
-          <div>
-            <h1 class="text-sm font-bold tracking-tight">Finanças Pro</h1>
-            <p id="user-role-badge" class="text-[10px] text-blue-200">Não conectado</p>
+        <div class="flex items-center space-x-2 truncate">
+          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-5 h-5 object-contain shrink-0">
+          <div class="truncate">
+            <h1 class="text-xs font-bold tracking-tight truncate">Finanças Pro</h1>
+            <p id="user-role-badge" class="text-[9px] text-blue-200 truncate">Não conectado</p>
           </div>
         </div>
       </div>
-      <button id="btn-logout" onclick="logout()" class="hidden bg-blue-900 hover:bg-blue-950 text-xs px-3 py-1.5 rounded-lg transition border border-blue-700">Sair</button>
+      <button id="btn-logout" onclick="logout()" class="hidden bg-blue-900 hover:bg-blue-950 text-xs px-2.5 py-1.5 rounded-lg transition shrink-0">Sair</button>
     </div>
   </header>
 
   <!-- Container Principal -->
-  <main class="max-w-4xl mx-auto w-full p-4 flex-grow space-y-5">
+  <main class="max-w-4xl mx-auto w-full p-3 flex-grow space-y-4">
 
     <!-- Tela de Login / Cadastro -->
-    <section id="sec-login" class="bg-white p-6 rounded-2xl shadow-xl border border-slate-100 max-w-md mx-auto my-8">
+    <section id="sec-login" class="bg-white p-5 rounded-2xl shadow-xl border max-w-sm mx-auto my-6">
       <div id="form-login-container">
-        <div class="text-center mb-6">
-          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-14 h-14 mx-auto mb-2">
-          <h2 class="text-xl font-bold text-slate-800">Acesse o Sistema</h2>
-          <p class="text-xs text-slate-500 mt-1">Controle financeiro integrado</p>
+        <div class="text-center mb-4">
+          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-12 h-12 mx-auto mb-1">
+          <h2 class="text-lg font-bold text-slate-800">Acesse o Sistema</h2>
         </div>
-        <form onsubmit="handleLogin(event)" class="space-y-4">
+        <form onsubmit="handleLogin(event)" class="space-y-3 text-xs">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail</label>
-            <input type="email" id="login-email" required placeholder="seu@email.com" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50">
+            <label class="block font-semibold text-slate-600 mb-1">E-mail</label>
+            <input type="email" id="login-email" required placeholder="seu@email.com" class="w-full p-2.5 border rounded-xl bg-slate-50">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Senha</label>
-            <input type="password" id="login-senha" required placeholder="Sua senha" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50">
+            <label class="block font-semibold text-slate-600 mb-1">Senha</label>
+            <input type="password" id="login-senha" required placeholder="Senha" class="w-full p-2.5 border rounded-xl bg-slate-50">
           </div>
-          <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 rounded-xl text-sm shadow-md transition">Entrar</button>
+          <button type="submit" class="w-full bg-blue-700 text-white font-semibold py-2.5 rounded-xl shadow">Entrar</button>
         </form>
-        <div class="mt-5 text-center">
-          <button onclick="alternarTelaCadastro(true)" class="text-xs text-blue-700 hover:underline font-semibold">Não tem cadastro? Crie sua conta</button>
+        <div class="mt-4 text-center">
+          <button onclick="alternarTelaCadastro(true)" class="text-xs text-blue-700 font-semibold">Criar nova conta</button>
         </div>
       </div>
 
       <div id="form-cadastro-container" class="hidden">
-        <div class="text-center mb-6">
-          <h2 class="text-xl font-bold text-slate-800">Criar Nova Conta</h2>
+        <div class="text-center mb-4">
+          <h2 class="text-lg font-bold text-slate-800">Criar Nova Conta</h2>
         </div>
-        <form onsubmit="handleCadastro(event)" class="space-y-4">
+        <form onsubmit="handleCadastro(event)" class="space-y-3 text-xs">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Seu Nome</label>
-            <input type="text" id="cad-nome" required placeholder="Seu nome" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50">
+            <label class="block font-semibold text-slate-600 mb-1">Nome</label>
+            <input type="text" id="cad-nome" required placeholder="Seu nome" class="w-full p-2.5 border rounded-xl bg-slate-50">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail</label>
-            <input type="email" id="cad-email" required placeholder="seu@email.com" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50">
+            <label class="block font-semibold text-slate-600 mb-1">E-mail</label>
+            <input type="email" id="cad-email" required placeholder="seu@email.com" class="w-full p-2.5 border rounded-xl bg-slate-50">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Senha</label>
-            <input type="password" id="cad-senha" required placeholder="Senha" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50">
+            <label class="block font-semibold text-slate-600 mb-1">Senha</label>
+            <input type="password" id="cad-senha" required placeholder="Senha" class="w-full p-2.5 border rounded-xl bg-slate-50">
           </div>
-          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm shadow-md transition">Solicitar Cadastro</button>
+          <button type="submit" class="w-full bg-emerald-600 text-white font-semibold py-2.5 rounded-xl shadow">Solicitar Cadastro</button>
         </form>
-        <div class="mt-5 text-center">
-          <button onclick="alternarTelaCadastro(false)" class="text-xs text-slate-600 hover:underline font-medium">Voltar ao login</button>
+        <div class="mt-4 text-center">
+          <button onclick="alternarTelaCadastro(false)" class="text-xs text-slate-600 font-medium">Voltar ao login</button>
         </div>
       </div>
     </section>
 
     <!-- Pendente -->
-    <section id="sec-pendente" class="hidden bg-amber-50 border border-amber-200 p-6 rounded-2xl shadow-md max-w-md mx-auto my-12 text-center space-y-4">
-      <h2 class="text-base font-bold text-amber-800">Aguardando Liberação do Administrador</h2>
-      <p class="text-xs text-amber-700">Seu cadastro está pendente de aprovação.</p>
-      <button onclick="logout()" class="bg-amber-600 text-white text-xs px-4 py-2 rounded-xl font-semibold">Sair</button>
+    <section id="sec-pendente" class="hidden bg-amber-50 border p-5 rounded-2xl shadow-md max-w-sm mx-auto my-10 text-center space-y-3 text-xs">
+      <h2 class="font-bold text-amber-800 text-sm">Aguardando Liberação</h2>
+      <p class="text-amber-700">O Administrador precisa aprovar seu acesso.</p>
+      <button onclick="logout()" class="bg-amber-600 text-white px-4 py-2 rounded-xl font-semibold">Sair</button>
     </section>
 
     <!-- Dashboard Principal -->
-    <div id="sec-dashboard" class="hidden space-y-5">
+    <div id="sec-dashboard" class="hidden space-y-4">
 
       <!-- Cards de Resumo -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500 flex justify-between items-center">
-          <div>
-            <span class="text-xs text-slate-500 font-medium">Receita do Mês</span>
-            <div class="text-2xl font-bold text-slate-800 mt-0.5" id="val-receita">R$ 0,00</div>
-          </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
+          <span class="text-[11px] text-slate-500 font-medium">Receita do Mês</span>
+          <div class="text-xl font-bold text-slate-800 mt-0.5" id="val-receita">R$ 0,00</div>
         </div>
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500 flex justify-between items-center">
-          <div>
-            <span class="text-xs text-slate-500 font-medium">Despesas do Mês</span>
-            <div class="text-2xl font-bold text-slate-800 mt-0.5" id="val-despesas">R$ 0,00</div>
-          </div>
+        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500">
+          <span class="text-[11px] text-slate-500 font-medium">Despesas do Mês</span>
+          <div class="text-xl font-bold text-slate-800 mt-0.5" id="val-despesas">R$ 0,00</div>
         </div>
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600 flex justify-between items-center">
-          <div>
-            <span class="text-xs text-slate-500 font-medium">Saldo do Mês</span>
-            <div class="text-2xl font-bold text-slate-800 mt-0.5" id="val-saldo">R$ 0,00</div>
-          </div>
+        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600">
+          <span class="text-[11px] text-slate-500 font-medium">Saldo Atual</span>
+          <div class="text-xl font-bold text-slate-800 mt-0.5" id="val-saldo">R$ 0,00</div>
         </div>
       </div>
 
-      <!-- Painel do Administrador (Receitas, Despesas Fixas e Usuários) -->
-      <div id="admin-exclusive-panel" class="hidden space-y-5">
-        <section class="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl shadow-sm space-y-4">
-          <h3 class="text-sm font-bold text-emerald-900">Configuração de Receita e Despesas Fixas</h3>
+      <!-- Painel Exclusivo do Administrador (Configurar Renda e Fixas) -->
+      <div id="admin-exclusive-panel" class="hidden space-y-4">
+        <section class="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl shadow-sm space-y-3 text-xs">
+          <h3 class="font-bold text-emerald-900">Configuração de Receita e Despesas Fixas (Admin)</h3>
           <form onsubmit="salvarReceita(event)" class="flex gap-2">
-            <input type="number" step="0.01" id="input-receita" placeholder="Renda do Mês (R$)" required class="flex-grow p-2.5 border border-emerald-300 rounded-xl text-sm bg-white">
-            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-xl font-semibold">Salvar Renda</button>
+            <input type="number" step="0.01" id="input-receita" placeholder="Renda (R$)" required class="flex-grow p-2 border rounded-xl bg-white">
+            <button type="submit" class="bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold shrink-0">Salvar Renda</button>
           </form>
-
-          <!-- Despesas Fixas Pré-fixadas (Água, Luz, Aluguel) -->
-          <div class="border-t border-emerald-200 pt-3">
-            <span class="text-xs font-bold text-emerald-800 block mb-2">Adicionar Despesa Fixa (Água, Luz, Aluguel...)</span>
+          <div class="border-t border-emerald-200 pt-2">
+            <span class="font-bold text-emerald-800 block mb-1">Adicionar Despesa Fixa (Água, Luz, Aluguel...)</span>
             <form onsubmit="adicionarDespesaFixa(event)" class="flex gap-2">
-              <input type="text" id="fixa-nome" placeholder="Nome (Ex: Aluguel)" required class="p-2.5 border border-emerald-300 rounded-xl text-sm bg-white flex-grow">
-              <input type="number" step="0.01" id="fixa-valor" placeholder="Valor (R$)" required class="p-2.5 border border-emerald-300 rounded-xl text-sm bg-white w-32">
-              <button type="submit" class="bg-blue-700 text-white text-xs px-4 py-2.5 rounded-xl font-semibold">Fixar</button>
+              <input type="text" id="fixa-nome" placeholder="Nome" required class="p-2 border rounded-xl bg-white flex-grow">
+              <input type="number" step="0.01" id="fixa-valor" placeholder="R$" required class="p-2 border rounded-xl bg-white w-24">
+              <button type="submit" class="bg-blue-700 text-white px-3 py-2 rounded-xl font-semibold shrink-0">Fixar</button>
             </form>
-          </div>
-        </section>
-
-        <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-          <h3 class="text-sm font-bold text-slate-800 mb-3">Gerenciamento de Usuários</h3>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead>
-                <tr class="border-b bg-slate-50 text-slate-600">
-                  <th class="p-2">Nome</th>
-                  <th class="p-2">E-mail</th>
-                  <th class="p-2 text-center">Aprovado</th>
-                  <th class="p-2 text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="tabela-usuarios" class="divide-y divide-slate-100"></tbody>
-            </table>
           </div>
         </section>
       </div>
 
       <!-- Formulário de Lançamento de Gasto Diário -->
-      <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-        <h3 class="text-sm font-bold text-slate-800 mb-3">Lançar Novo Gasto / Despesa Diária</h3>
-        <form onsubmit="adicionarGasto(event)" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input type="text" id="gasto-nome" placeholder="Descrição (Ex: Supermercado)" required class="p-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50">
-          <input type="number" step="0.01" id="gasto-valor" placeholder="Valor (R$)" required class="p-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50">
-          <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2.5 px-4 rounded-xl text-sm shadow">
+      <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-xs">
+        <h3 class="font-bold text-slate-800 mb-2">Lançar Novo Gasto / Despesa Diária</h3>
+        <form onsubmit="adicionarGasto(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <input type="text" id="gasto-nome" placeholder="Descrição (Ex: Mercado)" required class="p-2.5 border rounded-xl bg-slate-50">
+          <input type="number" step="0.01" id="gasto-valor" placeholder="Valor (R$)" required class="p-2.5 border rounded-xl bg-slate-50">
+          <button type="submit" class="bg-blue-700 text-white font-semibold py-2.5 px-3 rounded-xl shadow">
             Registrar Gasto
           </button>
         </form>
       </section>
 
       <!-- Gráfico e Histórico -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
-          <h3 class="text-sm font-bold text-slate-800 mb-2">Distribuição de Despesas</h3>
-          <div class="relative w-full h-60 flex justify-center items-center">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <h3 class="text-xs font-bold text-slate-800 mb-2">Distribuição de Despesas</h3>
+          <div class="relative w-full h-52 flex justify-center items-center">
             <canvas id="chartDespesas"></canvas>
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-          <h3 class="text-sm font-bold text-slate-800 mb-3">Histórico de Gastos do Mês</h3>
-          <div class="overflow-y-auto max-h-56 flex-grow pr-1">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+          <h3 class="text-xs font-bold text-slate-800 mb-2">Histórico de Gastos do Mês</h3>
+          <div class="overflow-y-auto max-h-52 flex-grow pr-1">
             <ul id="lista-gastos" class="divide-y divide-slate-100 text-xs"></ul>
           </div>
         </div>
@@ -323,7 +295,6 @@
       window.addEventListener('beforeunload', () => { if (currentUser) atualizarPresencaOnline(false); });
     });
 
-    // Controle do Menu Lateral (Gaveta)
     function abrirMenuLateral() {
       document.getElementById('drawer-menu').classList.remove('-translate-x-full');
       document.getElementById('drawer-overlay').classList.remove('hidden');
@@ -333,10 +304,8 @@
       document.getElementById('drawer-overlay').classList.add('hidden');
     }
 
-    // Controle da Janela do Chat
     function alternarJanelaChat() {
-      const janela = document.getElementById('janela-chat');
-      janela.classList.toggle('hidden');
+      document.getElementById('janela-chat').classList.toggle('hidden');
     }
 
     function alternarTelaCadastro(mostrar) {
@@ -423,6 +392,7 @@
       if (isAdmin) {
         document.getElementById('admin-exclusive-panel').classList.remove('hidden');
         document.getElementById('admin-chat-controls').classList.remove('hidden');
+        document.getElementById('drawer-admin-usuarios').classList.remove('hidden');
       }
       ouvirDadosFirebase();
     }
@@ -465,7 +435,7 @@
         });
         atualizarIndicadorAdminOnline(adminOnline);
         const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
-        if (isAdmin) { renderizarTabelaUsuarios(); atualizarSelectDestinatarios(); }
+        if (isAdmin) { renderizarMenuUsuarios(); atualizarSelectDestinatarios(); }
       });
     }
 
@@ -486,12 +456,10 @@
         const nomeMes = new Date(ano, mes - 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
         const textoFormatado = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
 
-        if (m === mesSelecionado) {
-          mesAtualDiv.innerText = textoFormatado;
-        }
+        if (m === mesSelecionado) mesAtualDiv.innerText = textoFormatado;
 
         const btn = document.createElement('button');
-        btn.className = `w-full text-left p-2.5 rounded-xl font-medium transition ${m === mesSelecionado ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`;
+        btn.className = `w-full text-left p-2 rounded-xl font-medium transition text-xs ${m === mesSelecionado ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`;
         btn.innerText = textoFormatado;
         btn.onclick = () => { mesSelecionado = m; fecharMenuLateral(); atualizarMenuLateralMeses(); renderUI(); };
         listaMesesDiv.appendChild(btn);
@@ -524,7 +492,7 @@
     }
 
     async function excluirDespesaFixa(idFixa) {
-      if (!confirm("Remover esta despesa fixa?")) return;
+      if (!confirm("Remover despesa?")) return;
       appData.despesasFixas[mesSelecionado] = appData.despesasFixas[mesSelecionado].filter(f => f.id !== idFixa);
       const { doc, setDoc } = window.firebaseModules;
       await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, despesasFixas: appData.despesasFixas }, { merge: true });
@@ -562,21 +530,25 @@
       await updateDoc(doc(window.db, "usuarios", idUsuario), { aprovado: status });
     }
 
-    function renderizarTabelaUsuarios() {
-      const tbody = document.getElementById('tabela-usuarios');
-      if (!tbody) return;
-      tbody.innerHTML = '';
+    function renderizarMenuUsuarios() {
+      const divUsuarios = document.getElementById('drawer-lista-usuarios');
+      if (!divUsuarios) return;
+      divUsuarios.innerHTML = '';
       appData.usuarios.forEach(u => {
         if (u.email === ADMIN_EMAIL || u.isAdmin) return;
-        const tr = document.createElement('tr');
-        tr.className = "border-b";
-        tr.innerHTML = `
-          <td class="p-2">${u.nome}</td>
-          <td class="p-2 text-slate-500">${u.email}</td>
-          <td class="p-2 text-center"><input type="checkbox" ${u.aprovado ? 'checked' : ''} onchange="alterarStatusUsuario('${u.id}', this.checked)" class="w-4 h-4 text-blue-600 rounded"></td>
-          <td class="p-2 text-center"><button onclick="excluirUsuario('${u.id}')" class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold text-[10px]">Excluir</button></td>
+        const item = document.createElement('div');
+        item.className = "flex justify-between items-center p-2 bg-slate-50 rounded-lg border";
+        item.innerHTML = `
+          <div class="truncate mr-2">
+            <span class="font-bold block truncate">${u.nome}</span>
+            <span class="text-[10px] text-slate-500 block truncate">${u.email}</span>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <input type="checkbox" ${u.aprovado ? 'checked' : ''} onchange="alterarStatusUsuario('${u.id}', this.checked)" class="w-4 h-4 text-blue-600 rounded">
+            <button onclick="excluirUsuario('${u.id}')" class="text-rose-600 font-bold p-1">✕</button>
+          </div>
         `;
-        tbody.appendChild(tr);
+        divUsuarios.appendChild(item);
       });
     }
 
@@ -637,41 +609,35 @@
       const listaEl = document.getElementById('lista-gastos');
       listaEl.innerHTML = '';
 
-      // Renderiza Despesas Fixas primeiro
       fixasMes.forEach(f => {
         const li = document.createElement('li');
-        li.className = "py-2.5 flex justify-between items-center border-b border-emerald-100 bg-emerald-50/50 px-2 rounded";
+        li.className = "py-2 px-2 flex justify-between items-center border-b border-emerald-100 bg-emerald-50/50 rounded text-xs";
         li.innerHTML = `
-          <div>
-            <span class="font-bold text-emerald-900">${f.nome} (Fixa)</span>
-            <span class="block text-[10px] text-emerald-600">Despesa Fixa Mensal</span>
-          </div>
-          <div class="flex items-center gap-2">
+          <div class="truncate mr-2"><span class="font-bold text-emerald-900">${f.nome} (Fixa)</span></div>
+          <div class="flex items-center gap-1.5 shrink-0">
             <span class="font-semibold text-rose-600">- R$ ${f.valor.toFixed(2)}</span>
-            ${isAdmin ? `<button onclick="excluirDespesaFixa(${f.id})" class="text-rose-400 hover:text-rose-600 font-bold p-1">✕</button>` : ''}
+            ${isAdmin ? `<button onclick="excluirDespesaFixa(${f.id})" class="text-rose-500 font-bold p-1">✕</button>` : ''}
           </div>
         `;
         listaEl.appendChild(li);
       });
 
-      // Renderiza Gastos Diários
       gastosMes.slice().reverse().forEach(gasto => {
         const li = document.createElement('li');
-        li.className = "py-2.5 flex justify-between items-center border-b border-slate-100";
+        li.className = "py-2 px-1 flex justify-between items-center border-b border-slate-100 text-xs";
         li.innerHTML = `
-          <div>
-            <span class="font-bold text-slate-700">${gasto.nome}</span>
-            <span class="block text-[10px] text-slate-400">Por: ${gasto.usuario}</span>
+          <div class="truncate mr-2">
+            <span class="font-bold text-slate-700 truncate block">${gasto.nome}</span>
+            <span class="text-[9px] text-slate-400 block">${gasto.usuario}</span>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 shrink-0">
             <span class="font-semibold text-rose-600">- R$ ${gasto.valor.toFixed(2)}</span>
-            ${isAdmin ? `<button onclick="excluirGasto('${gasto.id}')" class="text-rose-400 hover:text-rose-600 font-bold p-1">✕</button>` : ''}
+            ${isAdmin ? `<button onclick="excluirGasto('${gasto.id}')" class="text-rose-500 font-bold p-1">✕</button>` : ''}
           </div>
         `;
         listaEl.appendChild(li);
       });
 
-      // Chat Render
       const chatEl = document.getElementById('chat-messages');
       chatEl.innerHTML = '';
       let alertaUrgente = null;
@@ -681,8 +647,8 @@
         const relevante = isAdmin || eAutor || m.destinatario === "todos" || m.destinatario === currentUser.email;
         if (relevante) {
           const div = document.createElement('div');
-          div.className = `p-2 rounded-xl max-w-[85%] ${eAutor ? 'bg-indigo-600 text-white ml-auto' : 'bg-slate-200 text-slate-800'}`;
-          div.innerHTML = `<div class="font-bold text-[9px] opacity-80">${m.autor} - ${m.hora}</div><div>${m.texto}</div>`;
+          div.className = `p-2 rounded-xl max-w-[85%] text-xs ${eAutor ? 'bg-indigo-600 text-white ml-auto' : 'bg-slate-200 text-slate-800'}`;
+          div.innerHTML = `<div class="font-bold text-[9px] opacity-80">${m.autor}</div><div>${m.texto}</div>`;
           chatEl.appendChild(div);
           if (!isAdmin && m.autor === ADMIN_EMAIL && (m.destinatario === "todos" || m.destinatario === currentUser.email)) {
             alertaUrgente = m.texto;
@@ -714,7 +680,7 @@
           labels: labels.length ? labels : ['Sem despesas'],
           datasets: [{ data: valores.length ? valores : [1], backgroundColor: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'] }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }
       });
     }
 
