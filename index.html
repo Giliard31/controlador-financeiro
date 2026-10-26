@@ -15,30 +15,28 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- SDKs do Firebase (Versão Modular via CDN) -->
+  <!-- SDKs do Firebase com suas chaves configuradas -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ⚠️ SUBSTITUA ABAIXO COM AS CREDENCIAIS DO SEU PROJETO FIREBASE ⚠️
     const firebaseConfig = {
-      apiKey: "SUA_API_KEY_AQUI",
-      authDomain: "SEU_PROJETO.firebaseapp.com",
-      projectId: "SEU_PROJETO_ID",
-      storageBucket: "SEU_PROJETO.appspot.com",
-      messagingSenderId: "SEU_SENDER_ID",
-      appId: "SEU_APP_ID"
+      apiKey: "AIzaSyCvAYTxZAWw2b3i82De2AfxlVxiOGtvKco",
+      authDomain: "controladorfinanceiro-22c02.firebaseapp.com",
+      projectId: "controladorfinanceiro-22c02",
+      storageBucket: "controladorfinanceiro-22c02.firebasestorage.app",
+      messagingSenderId: "4355721192",
+      appId: "1:4355721192:web:d49e5afa4a91d25471865d",
+      measurementId: "G-VEVPX6LZMF"
     };
 
-    // Inicializa o Firebase
+    // Inicializa o Firebase e o Banco de Dados Firestore
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Torna globais para usar nas funções do app
     window.db = db;
-    window.firebaseModules = { collection, addDoc, onSnapshot, doc, setDoc, getDoc };
+    window.firebaseModules = { collection, addDoc, onSnapshot, doc, setDoc };
     
-    // Dispara o evento de carregamento do app após o Firebase inicializar
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
 
@@ -62,7 +60,7 @@
 
   <!-- Indicador Offline -->
   <div id="status-offline" class="hidden bg-amber-500 text-white text-xs text-center py-1 font-semibold">
-    Você está offline. Exibindo dados locais salvos.
+    Você está offline. Exibindo dados salvos localmente.
   </div>
 
   <!-- Cabeçalho Principal -->
@@ -112,7 +110,7 @@
         </div>
       </div>
 
-      <!-- Configuração de Receita (Admin) -->
+      <!-- Configuração de Receita (Visível Apenas para o Admin) -->
       <section id="admin-income-panel" class="hidden bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
         <h3 class="text-sm font-bold text-emerald-800 mb-2">Definir/Atualizar Receita Mensal</h3>
         <form onsubmit="salvarReceita(event)" class="flex gap-2">
@@ -121,7 +119,7 @@
         </form>
       </section>
 
-      <!-- Formulário de Gasto -->
+      <!-- Formulário de Lançamento de Gasto -->
       <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
         <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
           <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
@@ -136,7 +134,7 @@
         </form>
       </section>
 
-      <!-- Gráfico e Histórico -->
+      <!-- Gráfico e Histórico de Gastos -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
           <h3 class="text-sm font-bold text-slate-700 mb-2">Distribuição de Despesas</h3>
@@ -153,7 +151,7 @@
         </div>
       </div>
 
-      <!-- Módulo de Mensagens -->
+      <!-- Módulo de Mensagens em Tempo Real -->
       <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
         <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
           <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
@@ -170,7 +168,7 @@
   </main>
 
   <script>
-    const ADMIN_EMAIL = "admin@admin.com"; // Altere para o seu e-mail de admin se preferir
+    const ADMIN_EMAIL = "admin@admin.com"; // Altere para seu e-mail de Administrador se desejar
     let currentUser = localStorage.getItem('pwa_user') || null;
     let chartInstance = null;
 
@@ -181,14 +179,16 @@
     };
 
     window.addEventListener('firebase-ready', () => {
-      initApp();
+      if (currentUser) showDashboard();
     });
 
     window.addEventListener('load', () => {
       initManifest();
       initServiceWorker();
       checkConnection();
-      if (currentUser) showDashboard();
+      if (!currentUser) {
+        document.getElementById('sec-login').classList.remove('hidden');
+      }
     });
 
     function handleLogin(e) {
@@ -214,15 +214,17 @@
       document.getElementById('user-role-badge').innerText = `${currentUser} (${isAdmin ? 'Administrador' : 'Usuário'})`;
       if (isAdmin) document.getElementById('admin-income-panel').classList.remove('hidden');
 
-      ouvirDadosFirebase();
+      if (window.db) {
+        ouvirDadosFirebase();
+      }
     }
 
-    // Sincronização em Tempo Real com o Firestore
+    // Leitura em Tempo Real via Firebase Firestore
     function ouvirDadosFirebase() {
-      const { collection, onSnapshot, doc, getDoc } = window.firebaseModules;
+      const { collection, onSnapshot, doc } = window.firebaseModules;
       const db = window.db;
 
-      // Ouve a Receita global
+      // Ouve a Receita
       onSnapshot(doc(db, "financeiro", "config"), (docSnap) => {
         if (docSnap.exists()) {
           appData.receita = docSnap.data().receita || 0;
@@ -230,22 +232,21 @@
         }
       });
 
-      // Ouve os Gastos em tempo real
+      // Ouve a lista de Gastos
       onSnapshot(collection(db, "gastos"), (snapshot) => {
         appData.gastos = [];
-        snapshot.forEach((doc) => {
-          appData.gastos.push({ id: doc.id, ...doc.data() });
+        snapshot.forEach((docSnap) => {
+          appData.gastos.push({ id: docSnap.id, ...docSnap.data() });
         });
-        // Ordena por horário
         appData.gastos.sort((a, b) => a.timestamp - b.timestamp);
         renderUI();
       });
 
-      // Ouve as Mensagens em tempo real
+      // Ouve a lista de Mensagens
       onSnapshot(collection(db, "mensagens"), (snapshot) => {
         appData.mensagens = [];
-        snapshot.forEach((doc) => {
-          appData.mensagens.push({ id: doc.id, ...doc.data() });
+        snapshot.forEach((docSnap) => {
+          appData.mensagens.push({ id: docSnap.id, ...docSnap.data() });
         });
         appData.mensagens.sort((a, b) => a.timestamp - b.timestamp);
         renderUI();
@@ -297,7 +298,7 @@
       document.getElementById('chat-input').value = '';
     }
 
-    // Renderização Visual
+    // Renderização da Interface
     function renderUI() {
       const totalDespesas = appData.gastos.reduce((acc, item) => acc + item.valor, 0);
       const saldo = appData.receita - totalDespesas;
@@ -306,7 +307,7 @@
       document.getElementById('val-despesas').innerText = `R$ ${totalDespesas.toFixed(2)}`;
       document.getElementById('val-saldo').innerText = `R$ ${saldo.toFixed(2)}`;
 
-      // Lista de Gastos
+      // Lista dos Gastos
       const listaEl = document.getElementById('lista-gastos');
       listaEl.innerHTML = '';
       appData.gastos.slice().reverse().forEach(gasto => {
@@ -322,7 +323,7 @@
         listaEl.appendChild(li);
       });
 
-      // Chat
+      // Chat de Mensagens
       const chatEl = document.getElementById('chat-messages');
       chatEl.innerHTML = '';
       appData.mensagens.forEach(m => {
