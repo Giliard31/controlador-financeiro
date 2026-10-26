@@ -3,22 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Controlador Financeiro PWA</title>
+  <title>Finanças Pro - Controle Financeiro</title>
   
-  <!-- Configurações do PWA -->
-  <meta name="theme-color" content="#2563eb">
+  <!-- Configurações Modernas do PWA -->
+  <meta name="theme-color" content="#1e40af">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135706.png">
   <link rel="manifest" id="manifest-placeholder">
 
   <!-- Tailwind CSS & Chart.js -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- SDKs do Firebase com as suas novas credenciais -->
+  <!-- SDKs do Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, updateDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, updateDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCz3X_YrYt6o9UATBCiH2Gy_ojcf20Y2GU",
@@ -39,138 +40,180 @@
   </script>
 
   <style>
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f8fafc; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
 
-  <!-- Banner de Instalação do PWA -->
-  <div id="pwa-install-banner" class="hidden bg-indigo-600 text-white p-3 px-4 flex justify-between items-center shadow-md">
-    <div class="flex items-center space-x-2">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-      <span class="text-sm font-medium">Instalar este aplicativo no seu dispositivo?</span>
+  <!-- Banner de Alerta Flutuante (Mensagens Urgentes do Admin) -->
+  <div id="admin-alert-banner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white p-4 shadow-xl border-b-4 border-amber-600 flex justify-between items-center transition-all duration-300">
+    <div class="flex items-center space-x-3 max-w-3xl mx-auto">
+      <svg class="w-6 h-6 shrink-0 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+      <div>
+        <h4 class="font-bold text-sm">Aviso Importante do Administrador:</h4>
+        <p id="alert-text-content" class="text-xs text-amber-100"></p>
+      </div>
     </div>
-    <button id="btn-install-pwa" class="bg-white text-indigo-600 font-bold px-3 py-1 rounded-md text-xs hover:bg-slate-100 shadow transition">Instalar</button>
+    <button onclick="fecharAlertaAdmin()" class="bg-amber-700 hover:bg-amber-800 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition shadow">Entendido</button>
+  </div>
+
+  <!-- Banner de Instalação do PWA Moderno -->
+  <div id="pwa-install-banner" class="hidden bg-blue-900 text-white p-3 px-4 flex justify-between items-center shadow-lg">
+    <div class="flex items-center space-x-2">
+      <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-6 h-6 rounded" alt="Logo">
+      <span class="text-xs font-medium">Instalar aplicativo Finanças Pro na tela inicial?</span>
+    </div>
+    <button id="btn-install-pwa" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-3 py-1 rounded-md text-xs shadow transition">Instalar App</button>
   </div>
 
   <!-- Indicador Offline -->
-  <div id="status-offline" class="hidden bg-amber-500 text-white text-xs text-center py-1 font-semibold">
-    Você está offline. Exibindo dados salvos localmente.
+  <div id="status-offline" class="hidden bg-rose-500 text-white text-xs text-center py-1 font-semibold">
+    Você está offline. Os dados locais serão sincronizados quando a conexão voltar.
   </div>
 
-  <!-- Cabeçalho Principal -->
-  <header class="bg-blue-700 text-white shadow-lg p-4">
-    <div class="max-w-4xl mx-auto flex justify-between items-center">
-      <div>
-        <h1 class="text-xl font-bold tracking-wide">Finanças Control</h1>
-        <p id="user-role-badge" class="text-xs text-blue-200">Não conectado</p>
+  <!-- Cabeçalho Profissional -->
+  <header class="bg-blue-800 text-white shadow-md">
+    <div class="max-w-4xl mx-auto p-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="bg-blue-700 p-2 rounded-xl shadow-inner">
+          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-7 h-7 object-contain" alt="Ícone">
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight">Finanças Pro</h1>
+          <p id="user-role-badge" class="text-[11px] text-blue-200">Não conectado</p>
+        </div>
       </div>
-      <button id="btn-logout" onclick="logout()" class="hidden bg-blue-800 hover:bg-blue-900 text-xs px-3 py-1.5 rounded transition">Sair</button>
+      <button id="btn-logout" onclick="logout()" class="hidden bg-blue-900 hover:bg-blue-950 text-xs px-3 py-1.5 rounded-lg transition border border-blue-700">Sair da Conta</button>
     </div>
   </header>
 
   <!-- Container Principal -->
-  <main class="max-w-4xl mx-auto w-full p-4 flex-grow space-y-6">
+  <main class="max-w-4xl mx-auto w-full p-4 flex-grow space-y-5">
 
     <!-- Tela de Login / Acesso -->
-    <section id="sec-login" class="bg-white p-6 rounded-xl shadow-md border border-slate-200 max-w-md mx-auto my-10">
+    <section id="sec-login" class="bg-white p-6 rounded-2xl shadow-xl border border-slate-100 max-w-md mx-auto my-8">
       <div id="form-login-container">
-        <h2 class="text-xl font-bold mb-2 text-slate-700 text-center">Entrar no Sistema</h2>
-        <p class="text-xs text-slate-500 mb-4 text-center">Informe seu e-mail e senha cadastrados.</p>
+        <div class="text-center mb-6">
+          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-14 h-14 mx-auto mb-2 opacity-90" alt="Logo">
+          <h2 class="text-xl font-bold text-slate-800">Bem-vindo de volta</h2>
+          <p class="text-xs text-slate-500 mt-1">Acesse sua conta para gerenciar suas despesas</p>
+        </div>
         
         <form onsubmit="handleLogin(event)" class="space-y-4">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail</label>
-            <input type="email" id="login-email" required placeholder="seu@email.com" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <input type="email" id="login-email" required placeholder="seu@email.com" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none bg-slate-50">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Senha</label>
-            <input type="password" id="login-senha" required placeholder="Sua senha" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <input type="password" id="login-senha" required placeholder="Sua senha" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none bg-slate-50">
           </div>
-          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm shadow transition">Entrar</button>
+          <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 rounded-xl text-sm shadow-md transition">Entrar no Sistema</button>
         </form>
 
-        <div class="mt-4 text-center">
-          <button onclick="alternarTelaCadastro(true)" class="text-xs text-blue-600 hover:underline font-medium">Não tem cadastro? Criar conta</button>
+        <div class="mt-5 text-center">
+          <button onclick="alternarTelaCadastro(true)" class="text-xs text-blue-700 hover:underline font-semibold">Não tem cadastro? Crie sua conta aqui</button>
         </div>
       </div>
 
       <!-- Formulário de Cadastro -->
       <div id="form-cadastro-container" class="hidden">
-        <h2 class="text-xl font-bold mb-2 text-slate-700 text-center">Criar Nova Conta</h2>
-        <p class="text-xs text-slate-500 mb-4 text-center">Preencha para solicitar acesso ao aplicativo.</p>
+        <div class="text-center mb-6">
+          <h2 class="text-xl font-bold text-slate-800">Criar Nova Conta</h2>
+          <p class="text-xs text-slate-500 mt-1">Preencha os dados para solicitar acesso</p>
+        </div>
         
         <form onsubmit="handleCadastro(event)" class="space-y-4">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Seu Nome</label>
-            <input type="text" id="cad-nome" required placeholder="Ex: João Silva" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm">
+            <input type="text" id="cad-nome" required placeholder="Ex: Giliard Martins" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail</label>
-            <input type="email" id="cad-email" required placeholder="seu@email.com" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm">
+            <input type="email" id="cad-email" required placeholder="seu@email.com" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Senha</label>
-            <input type="password" id="cad-senha" required placeholder="Crie uma senha" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm">
+            <input type="password" id="cad-senha" required placeholder="Crie uma senha" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50">
           </div>
-          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-sm shadow transition">Solicitar Cadastro</button>
+          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm shadow-md transition">Solicitar Cadastro</button>
         </form>
 
-        <div class="mt-4 text-center">
+        <div class="mt-5 text-center">
           <button onclick="alternarTelaCadastro(false)" class="text-xs text-slate-600 hover:underline font-medium">Já tem uma conta? Voltar ao login</button>
         </div>
       </div>
     </section>
 
     <!-- Aviso de Conta Aguardando Aprovação -->
-    <section id="sec-pendente" class="hidden bg-amber-50 border border-amber-300 p-6 rounded-xl shadow-md max-w-md mx-auto my-10 text-center space-y-4">
-      <h2 class="text-lg font-bold text-amber-800">Aguardando Liberação do Administrador</h2>
-      <p class="text-xs text-amber-700">Seu cadastro foi realizado com sucesso, mas o Administrador ainda precisa aprovar o seu acesso para que você possa lançar gastos.</p>
-      <button onclick="logout()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-4 py-2 rounded-lg font-semibold">Sair / Tentar Outra Conta</button>
+    <section id="sec-pendente" class="hidden bg-amber-50 border border-amber-200 p-6 rounded-2xl shadow-md max-w-md mx-auto my-12 text-center space-y-4">
+      <div class="bg-amber-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto text-amber-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      </div>
+      <h2 class="text-base font-bold text-amber-800">Aguardando Liberação do Administrador</h2>
+      <p class="text-xs text-amber-700 leading-relaxed">Seu cadastro foi realizado com sucesso. O Administrador precisa aprovar seu acesso no painel principal para liberar os lançamentos.</p>
+      <button onclick="logout()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-4 py-2.5 rounded-xl font-semibold shadow transition">Sair / Tentar Outra Conta</button>
     </section>
 
     <!-- Painel Principal (Dashboard) -->
-    <div id="sec-dashboard" class="hidden space-y-6">
+    <div id="sec-dashboard" class="hidden space-y-5">
 
-      <!-- Cards de Resumo -->
+      <!-- Cards de Resumo Financeiro -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
-          <span class="text-xs text-slate-500 font-medium">Receita Total (Admin)</span>
-          <div class="text-2xl font-bold text-slate-800 mt-1" id="val-receita">R$ 0,00</div>
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500 flex justify-between items-center">
+          <div>
+            <span class="text-xs text-slate-500 font-medium">Receita Total</span>
+            <div class="text-2xl font-bold text-slate-800 mt-0.5" id="val-receita">R$ 0,00</div>
+          </div>
+          <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          </div>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-red-500">
-          <span class="text-xs text-slate-500 font-medium">Total de Despesas</span>
-          <div class="text-2xl font-bold text-slate-800 mt-1" id="val-despesas">R$ 0,00</div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500 flex justify-between items-center">
+          <div>
+            <span class="text-xs text-slate-500 font-medium">Total de Despesas</span>
+            <div class="text-2xl font-bold text-slate-800 mt-0.5" id="val-despesas">R$ 0,00</div>
+          </div>
+          <div class="bg-rose-50 p-3 rounded-xl text-rose-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+          </div>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
-          <span class="text-xs text-slate-500 font-medium">Saldo Atual</span>
-          <div class="text-2xl font-bold text-slate-800 mt-1" id="val-saldo">R$ 0,00</div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600 flex justify-between items-center">
+          <div>
+            <span class="text-xs text-slate-500 font-medium">Saldo Atual</span>
+            <div class="text-2xl font-bold text-slate-800 mt-0.5" id="val-saldo">R$ 0,00</div>
+          </div>
+          <div class="bg-blue-50 p-3 rounded-xl text-blue-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+          </div>
         </div>
       </div>
 
       <!-- Painel Exclusivo do Administrador -->
-      <div id="admin-exclusive-panel" class="hidden space-y-6">
-        <section class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
-          <h3 class="text-sm font-bold text-emerald-800 mb-2">Definir/Atualizar Receita Mensal (Admin)</h3>
+      <div id="admin-exclusive-panel" class="hidden space-y-5">
+        <section class="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl shadow-sm">
+          <h3 class="text-sm font-bold text-emerald-900 mb-2">Definir / Atualizar Receita Mensal</h3>
           <form onsubmit="salvarReceita(event)" class="flex gap-2">
-            <input type="number" step="0.01" id="input-receita" placeholder="Valor da Renda (R$)" required class="flex-grow p-2 border border-emerald-300 rounded-lg text-sm">
-            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-lg font-semibold">Atualizar</button>
+            <input type="number" step="0.01" id="input-receita" placeholder="Valor da Renda (R$)" required class="flex-grow p-2.5 border border-emerald-300 rounded-xl text-sm bg-white">
+            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-5 py-2.5 rounded-xl font-semibold shadow transition">Atualizar Renda</button>
           </form>
         </section>
 
-        <!-- Gerenciamento e Liberação de Usuários Pendentes -->
-        <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-          <h3 class="text-sm font-bold text-slate-700 mb-3">Gerenciar e Liberar Usuários Cadastrados</h3>
+        <!-- Gerenciamento de Usuários -->
+        <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+          <h3 class="text-sm font-bold text-slate-800 mb-3">Gerenciamento de Acesso de Usuários</h3>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
               <thead>
                 <tr class="border-b bg-slate-50 text-slate-600">
-                  <th class="p-2">Nome</th>
-                  <th class="p-2">E-mail</th>
-                  <th class="p-2 text-center">Aprovado / Liberado</th>
+                  <th class="p-2.5">Nome</th>
+                  <th class="p-2.5">E-mail</th>
+                  <th class="p-2.5 text-center">Aprovado / Liberado</th>
                 </tr>
               </thead>
               <tbody id="tabela-usuarios" class="divide-y divide-slate-100"></tbody>
@@ -180,47 +223,66 @@
       </div>
 
       <!-- Formulário de Lançamento de Gasto -->
-      <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-        <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+      <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+        <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
           <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
           Lançar Novo Gasto / Despesa
         </h3>
         <form onsubmit="adicionarGasto(event)" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input type="text" id="gasto-nome" placeholder="Descrição (ex: Mercado, Combustível)" required class="p-2 border border-slate-300 rounded-lg text-sm">
-          <input type="number" step="0.01" id="gasto-valor" placeholder="Valor (R$)" required class="p-2 border border-slate-300 rounded-lg text-sm">
-          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition">
-            Lançar Gasto
+          <input type="text" id="gasto-nome" placeholder="Descrição (ex: Supermercado)" required class="p-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50">
+          <input type="number" step="0.01" id="gasto-valor" placeholder="Valor (R$)" required class="p-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50">
+          <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2.5 px-4 rounded-xl text-sm shadow transition">
+            Registrar Gasto
           </button>
         </form>
       </section>
 
-      <!-- Gráfico e Histórico de Gastos -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
-          <h3 class="text-sm font-bold text-slate-700 mb-2">Distribuição de Despesas</h3>
-          <div class="relative w-full h-64 flex justify-center items-center">
+      <!-- Gráfico e Histórico -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <h3 class="text-sm font-bold text-slate-800 mb-2">Distribuição de Despesas</h3>
+          <div class="relative w-full h-60 flex justify-center items-center">
             <canvas id="chartDespesas"></canvas>
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col">
-          <h3 class="text-sm font-bold text-slate-700 mb-3">Histórico de Gastos (Tempo Real)</h3>
-          <div class="overflow-y-auto max-h-60 flex-grow">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+          <h3 class="text-sm font-bold text-slate-800 mb-3">Histórico de Gastos em Tempo Real</h3>
+          <div class="overflow-y-auto max-h-56 flex-grow pr-1">
             <ul id="lista-gastos" class="divide-y divide-slate-100 text-xs"></ul>
           </div>
         </div>
       </div>
 
-      <!-- Módulo de Mensagens em Tempo Real -->
-      <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-        <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-          Módulo de Avisos e Mensagens
-        </h3>
-        <div id="chat-messages" class="h-32 overflow-y-auto border border-slate-200 p-3 rounded-lg mb-3 bg-slate-50 space-y-2 text-xs"></div>
-        <form onsubmit="enviarMensagem(event)" class="flex gap-2">
-          <input type="text" id="chat-input" placeholder="Digite um aviso..." required class="flex-grow p-2 border border-slate-300 rounded-lg text-xs">
-          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg text-xs">Enviar</button>
+      <!-- Módulo de Mensagens e Chat Privado -->
+      <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+        <div class="flex justify-between items-center border-b pb-3">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            <h3 class="text-sm font-bold text-slate-800">Central de Mensagens e Suporte</h3>
+          </div>
+          <!-- Indicador se Admin está online -->
+          <div id="admin-status-indicator" class="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+            <span class="w-2 h-2 rounded-full bg-slate-400" id="status-dot"></span>
+            <span id="status-text">Admin Offline</span>
+          </div>
+        </div>
+
+        <div id="chat-messages" class="h-40 overflow-y-auto border border-slate-100 p-3 rounded-xl bg-slate-50 space-y-2 text-xs"></div>
+
+        <form onsubmit="enviarMensagem(event)" class="space-y-2">
+          <!-- Opções exclusivas do Admin para direcionar destinatário -->
+          <div id="admin-chat-controls" class="hidden flex gap-2 items-center text-xs">
+            <span class="font-semibold text-slate-600">Enviar para:</span>
+            <select id="chat-destinatario" class="p-1.5 border border-slate-200 rounded-lg bg-white flex-grow">
+              <option value="todos">Todos os Usuários (Aviso Geral)</option>
+            </select>
+          </div>
+
+          <div class="flex gap-2">
+            <input type="text" id="chat-input" placeholder="Digite sua mensagem..." required class="flex-grow p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-xs shadow transition">Enviar</button>
+          </div>
         </form>
       </section>
 
@@ -228,12 +290,16 @@
   </main>
 
   <script>
+    const ADMIN_EMAIL = "giliard@admin.com"; // Defina aqui o seu e-mail de admin principal
     let currentUser = JSON.parse(localStorage.getItem('pwa_user')) || null;
     let chartInstance = null;
     let appData = { receita: 0, gastos: [], mensagens: [], usuarios: [] };
 
     window.addEventListener('firebase-ready', () => {
-      if (currentUser) verificarSessaoAtiva();
+      if (currentUser) {
+        atualizarPresencaOnline(true);
+        verificarSessaoAtiva();
+      }
     });
 
     window.addEventListener('load', () => {
@@ -243,6 +309,11 @@
       if (!currentUser) {
         document.getElementById('sec-login').classList.remove('hidden');
       }
+      
+      // Atualiza status online ao fechar/sair da página
+      window.addEventListener('beforeunload', () => {
+        if (currentUser) atualizarPresencaOnline(false);
+      });
     });
 
     function alternarTelaCadastro(mostrar) {
@@ -270,16 +341,19 @@
         return;
       }
 
+      const eAdmin = (email === ADMIN_EMAIL);
+
       await addDoc(collection(window.db, "usuarios"), {
         nome,
         email,
         senha,
-        aprovado: false,
-        isAdmin: false,
+        aprovado: eAdmin,
+        isAdmin: eAdmin,
+        online: false,
         criadoEm: Date.now()
       });
 
-      alert("Cadastro realizado com sucesso! Aguarde a liberação do administrador no Firestore do Firebase.");
+      alert(eAdmin ? "Cadastro de Administrador realizado com sucesso!" : "Cadastro realizado! Aguarde a liberação do Administrador.");
       alternarTelaCadastro(false);
     }
 
@@ -309,14 +383,25 @@
 
       currentUser = userData;
       localStorage.setItem('pwa_user', JSON.stringify(currentUser));
+      atualizarPresencaOnline(true);
       verificarSessaoAtiva();
+    }
+
+    async function atualizarPresencaOnline(status) {
+      if (!currentUser || !window.db) return;
+      try {
+        const { doc, updateDoc } = window.firebaseModules;
+        await updateDoc(doc(window.db, "usuarios", currentUser.id), { online: status });
+      } catch (err) {
+        console.error("Erro ao atualizar status online:", err);
+      }
     }
 
     function verificarSessaoAtiva() {
       document.getElementById('sec-login').classList.add('hidden');
       document.getElementById('sec-pendente').classList.add('hidden');
 
-      const isAdmin = currentUser.isAdmin === true;
+      const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
 
       if (!isAdmin && !currentUser.aprovado) {
         document.getElementById('sec-pendente').classList.remove('hidden');
@@ -329,6 +414,7 @@
     }
 
     function logout() {
+      atualizarPresencaOnline(false);
       localStorage.removeItem('pwa_user');
       location.reload();
     }
@@ -339,11 +425,12 @@
       document.getElementById('sec-dashboard').classList.remove('hidden');
       document.getElementById('btn-logout').classList.remove('hidden');
 
-      const isAdmin = currentUser.isAdmin === true;
+      const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
       document.getElementById('user-role-badge').innerText = `${currentUser.email} (${isAdmin ? 'Administrador' : 'Usuário'})`;
 
       if (isAdmin) {
         document.getElementById('admin-exclusive-panel').classList.remove('hidden');
+        document.getElementById('admin-chat-controls').classList.remove('hidden');
       }
 
       ouvirDadosFirebase();
@@ -378,23 +465,63 @@
         renderUI();
       });
 
-      const isAdmin = currentUser.isAdmin === true;
-      if (isAdmin) {
-        onSnapshot(collection(db, "usuarios"), (snapshot) => {
-          appData.usuarios = [];
-          snapshot.forEach((docSnap) => {
-            appData.usuarios.push({ id: docSnap.id, ...docSnap.data() });
-          });
-          renderizarTabelaUsuarios();
+      onSnapshot(collection(db, "usuarios"), (snapshot) => {
+        appData.usuarios = [];
+        let adminOnline = false;
+        snapshot.forEach((docSnap) => {
+          const u = { id: docSnap.id, ...docSnap.data() };
+          appData.usuarios.push(u);
+          if ((u.email === ADMIN_EMAIL || u.isAdmin) && u.online) {
+            adminOnline = true;
+          }
         });
+
+        // Atualiza indicador de Admin Online na tela do usuário
+        atualizarIndicadorAdminOnline(adminOnline);
+
+        const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
+        if (isAdmin) {
+          renderizarTabelaUsuarios();
+          atualizarSelectDestinatarios();
+        }
+      });
+    }
+
+    function atualizarIndicadorAdminOnline(online) {
+      const dot = document.getElementById('status-dot');
+      const text = document.getElementById('status-text');
+      const container = document.getElementById('admin-status-indicator');
+      if (!dot || !text) return;
+
+      if (online) {
+        dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+        text.innerText = "Admin Online";
+        container.className = "flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700";
+      } else {
+        dot.className = "w-2 h-2 rounded-full bg-slate-400";
+        text.innerText = "Admin Offline";
+        container.className = "flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600";
       }
+    }
+
+    function atualizarSelectDestinatarios() {
+      const select = document.getElementById('chat-destinatario');
+      if (!select) return;
+      select.innerHTML = '<option value="todos">Todos os Usuários (Aviso Geral)</option>';
+      
+      appData.usuarios.forEach(u => {
+        if (!(u.email === ADMIN_EMAIL || u.isAdmin)) {
+          const opt = document.createElement('option');
+          opt.value = u.email;
+          opt.innerText = `${u.nome} (${u.email})`;
+          select.appendChild(opt);
+        }
+      });
     }
 
     async function alterarStatusUsuario(idUsuario, novoStatus) {
       const { doc, updateDoc } = window.firebaseModules;
-      await updateDoc(doc(window.db, "usuarios", idUsuario), {
-        aprovado: novoStatus
-      });
+      await updateDoc(doc(window.db, "usuarios", idUsuario), { aprovado: novoStatus });
     }
 
     function renderizarTabelaUsuarios() {
@@ -403,13 +530,13 @@
       tbody.innerHTML = '';
 
       appData.usuarios.forEach(u => {
-        if (u.isAdmin) return; 
+        if (u.email === ADMIN_EMAIL || u.isAdmin) return;
         const tr = document.createElement('tr');
         tr.className = "border-b";
         tr.innerHTML = `
-          <td class="p-2 font-medium">${u.nome}</td>
-          <td class="p-2 text-slate-500">${u.email}</td>
-          <td class="p-2 text-center">
+          <td class="p-2.5 font-medium">${u.nome}</td>
+          <td class="p-2.5 text-slate-500">${u.email}</td>
+          <td class="p-2.5 text-center">
             <input type="checkbox" ${u.aprovado ? 'checked' : ''} onchange="alterarStatusUsuario('${u.id}', this.checked)" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
           </td>
         `;
@@ -451,15 +578,29 @@
       const txt = document.getElementById('chat-input').value.trim();
       if (!txt) return;
 
+      const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
+      let destinatario = "todos";
+
+      if (isAdmin) {
+        destinatario = document.getElementById('chat-destinatario').value;
+      } else {
+        destinatario = ADMIN_EMAIL; // Usuário comum envia direto para o Admin
+      }
+
       const { collection, addDoc } = window.firebaseModules;
       await addDoc(collection(window.db, "mensagens"), {
         autor: currentUser.email,
+        destinatario: destinatario,
         texto: txt,
         timestamp: Date.now(),
         hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
       });
 
       document.getElementById('chat-input').value = '';
+    }
+
+    function fecharAlertaAdmin() {
+      document.getElementById('admin-alert-banner').classList.add('hidden');
     }
 
     function renderUI() {
@@ -474,28 +615,47 @@
       listaEl.innerHTML = '';
       appData.gastos.slice().reverse().forEach(gasto => {
         const li = document.createElement('li');
-        li.className = "py-2 flex justify-between items-center";
+        li.className = "py-2.5 flex justify-between items-center";
         li.innerHTML = `
           <div>
             <span class="font-bold text-slate-700">${gasto.nome}</span>
             <span class="block text-[10px] text-slate-400">Por: ${gasto.usuario} às ${gasto.data}</span>
           </div>
-          <span class="font-semibold text-red-600">- R$ ${gasto.valor.toFixed(2)}</span>
+          <span class="font-semibold text-rose-600">- R$ ${gasto.valor.toFixed(2)}</span>
         `;
         listaEl.appendChild(li);
       });
 
+      // Filtro e Exibição de Mensagens (Chat privado ou para todos)
       const chatEl = document.getElementById('chat-messages');
       chatEl.innerHTML = '';
-      appData.mensagens.forEach(m => {
-        const div = document.createElement('div');
-        const eAdmin = (m.autor === currentUser.email && currentUser.isAdmin);
-        div.className = `p-2 rounded-lg max-w-[85%] ${eAdmin ? 'bg-indigo-100 text-indigo-900 ml-auto' : 'bg-slate-200 text-slate-800'}`;
-        div.innerHTML = `<div class="font-bold text-[10px] opacity-75">${m.autor} - ${m.hora}</div><div>${m.texto}</div>`;
-        chatEl.appendChild(div);
-      });
-      chatEl.scrollTop = chatEl.scrollHeight;
+      const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
 
+      let ultimaMensagemAdminUrgente = null;
+
+      appData.mensagens.forEach(m => {
+        const eAutor = (m.autor === currentUser.email);
+        const relevante = isAdmin || eAutor || m.destinatario === "todos" || m.destinatario === currentUser.email;
+
+        if (relevante) {
+          const div = document.createElement('div');
+          div.className = `p-2.5 rounded-xl max-w-[85%] ${eAutor ? 'bg-blue-600 text-white ml-auto' : 'bg-slate-200 text-slate-800'}`;
+          div.innerHTML = `<div class="font-bold text-[10px] opacity-80 mb-0.5">${m.autor} ${m.destinatario !== 'todos' ? '(Privado)' : ''} - ${m.hora}</div><div>${m.texto}</div>`;
+          chatEl.appendChild(div);
+
+          // Se o admin mandou uma mensagem para todos ou para este usuário e ele não é o autor, exibe o banner flutuante no topo
+          if (!isAdmin && m.autor === ADMIN_EMAIL && (m.destinatario === "todos" || m.destinatario === currentUser.email)) {
+            ultimaMensagemAdminUrgente = m.texto;
+          }
+        }
+      });
+
+      if (ultimaMensagemAdminUrgente && !isAdmin) {
+        document.getElementById('alert-text-content').innerText = ultimaMensagemAdminUrgente;
+        document.getElementById('admin-alert-banner').classList.remove('hidden');
+      }
+
+      chatEl.scrollTop = chatEl.scrollHeight;
       renderChart();
     }
 
@@ -518,7 +678,8 @@
           datasets: [{
             data: valores.length ? valores : [1],
             backgroundColor: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'],
-            borderWidth: 1
+            borderWidth: 2,
+            borderColor: '#ffffff'
           }]
         },
         options: {
@@ -536,12 +697,19 @@
       if (!navigator.onLine) banner.classList.remove('hidden');
     }
 
+    // Configuração do PWA atualizada e sem avisos de formato antigo
     function initManifest() {
       const manifestData = {
-        name: "Controlador Financeiro PWA", short_name: "Finanças",
-        start_url: "./", display: "standalone",
-        background_color: "#ffffff", theme_color: "#2563eb",
-        icons: [{ src: "https://via.placeholder.com/192/2563eb/ffffff?text=PWA", sizes: "192x192", type: "image/png" }]
+        name: "Finanças Pro",
+        short_name: "Finanças",
+        start_url: "./",
+        display: "standalone",
+        background_color: "#ffffff",
+        theme_color: "#1e40af",
+        icons: [
+          { src: "https://cdn-icons-png.flaticon.com/512/3135/3135706.png", sizes: "192x192", type: "image/png" },
+          { src: "https://cdn-icons-png.flaticon.com/512/3135/3135706.png", sizes: "512x512", type: "image/png" }
+        ]
       };
       const blob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
       document.getElementById('manifest-placeholder').setAttribute('href', URL.createObjectURL(blob));
