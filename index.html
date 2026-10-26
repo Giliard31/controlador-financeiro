@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Finanças Pro - Controle Financeiro</title>
+  <title>Finanças Pro</title>
   
   <meta name="theme-color" content="#1e40af">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -36,234 +36,231 @@
   </script>
 
   <style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { touch-action: pan-x pan-y; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; word-break: break-word; }
+    body { touch-action: pan-x pan-y; font-size: 15px; }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: #f8fafc; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col pt-16 overflow-x-hidden">
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col pt-16 overflow-x-hidden">
 
-  <!-- Banner de Alerta Flutuante (Admin) -->
-  <div id="admin-alert-banner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white p-3 shadow-xl border-b-4 border-amber-600 flex justify-between items-center text-xs">
-    <div class="flex items-center space-x-2 max-w-xl mx-auto truncate px-2">
-      <span class="font-bold shrink-0">Aviso:</span>
-      <p id="alert-text-content" class="truncate"></p>
+  <!-- Modal Central para Mensagens Urgentes ao Logar -->
+  <div id="modal-aviso-central" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 animate-scaleUp">
+      <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">⚠️</div>
+      <h3 class="font-bold text-lg text-slate-800">Mensagem do Administrador</h3>
+      <p id="modal-texto-aviso" class="text-sm text-slate-600 leading-relaxed"></p>
+      <button onclick="fecharModalAviso()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 rounded-2xl text-sm shadow">Entendido</button>
     </div>
-    <button onclick="fecharAlertaAdmin()" class="bg-amber-700 font-bold px-2.5 py-1 rounded">Ok</button>
   </div>
 
-  <!-- Menu Lateral Deslizante (Gaveta / Drawer) com Histórico e Aprovação de Usuários -->
+  <!-- Menu Lateral Deslizante (Gaveta) -->
   <div id="drawer-overlay" class="fixed inset-0 bg-black/50 z-50 hidden transition-opacity" onclick="fecharMenuLateral()"></div>
   <div id="drawer-menu" class="fixed top-0 left-0 bottom-0 w-4/5 max-w-xs bg-white z-50 shadow-2xl transform -translate-x-full transition-transform duration-300 flex flex-col">
     <div class="bg-blue-800 text-white p-4 flex justify-between items-center shrink-0">
       <div class="flex items-center space-x-2">
-        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-6 h-6">
-        <h2 class="font-bold text-sm">Menu & Gerenciamento</h2>
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-7 h-7">
+        <h2 class="font-bold text-sm">Menu & Finanças</h2>
       </div>
-      <button onclick="fecharMenuLateral()" class="text-white font-bold text-lg p-1">✕</button>
+      <button onclick="fecharMenuLateral()" class="text-white font-bold text-xl p-1">✕</button>
     </div>
     
-    <div class="p-4 overflow-y-auto flex-grow space-y-5 text-xs">
-      <div>
-        <span class="font-bold text-slate-400 uppercase tracking-wider block mb-1">Mês Selecionado</span>
-        <div id="drawer-mes-atual" class="p-2.5 bg-blue-50 border border-blue-200 rounded-xl font-bold text-blue-900 text-xs truncate"></div>
+    <div class="p-4 overflow-y-auto flex-grow space-y-5 text-sm">
+      <!-- Receita Secreta / Visível no Menu -->
+      <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl">
+        <span class="font-bold text-emerald-800 text-xs uppercase tracking-wider block mb-1">Receita do Mês</span>
+        <div id="drawer-valor-receita" class="text-lg font-extrabold text-emerald-900">R$ 0,00</div>
       </div>
 
       <div>
-        <span class="font-bold text-slate-400 uppercase tracking-wider block mb-1">Histórico de Meses</span>
-        <div id="drawer-lista-meses" class="space-y-1"></div>
+        <span class="font-bold text-slate-400 uppercase tracking-wider block mb-1 text-xs">Mês Selecionado</span>
+        <div id="drawer-mes-atual" class="p-3 bg-blue-50 border border-blue-200 rounded-xl font-bold text-blue-900 text-xs"></div>
       </div>
 
-      <!-- Área de Aprovação de Usuários (Visível Apenas para o Admin dentro do Menu) -->
+      <div>
+        <span class="font-bold text-slate-400 uppercase tracking-wider block mb-1 text-xs">Histórico de Meses</span>
+        <div id="drawer-lista-meses" class="space-y-1.5"></div>
+      </div>
+
+      <!-- Gerenciamento de Usuários (Apenas Admin) -->
       <div id="drawer-admin-usuarios" class="hidden border-t pt-4 space-y-2">
-        <span class="font-bold text-slate-400 uppercase tracking-wider block">Aprovar Usuários</span>
+        <span class="font-bold text-slate-400 uppercase tracking-wider block text-xs">Aprovar Usuários</span>
         <div id="drawer-lista-usuarios" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
       </div>
     </div>
-
-    <div class="p-3 border-t text-center text-[10px] text-slate-400 shrink-0">
-      Finanças Pro PWA
-    </div>
   </div>
 
-  <!-- Botão Flutuante do Chat -->
-  <div class="fixed bottom-4 right-4 z-40">
-    <button onclick="alternarJanelaChat()" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition">
+  <!-- Botão Flutuante do Chat (Oculto se não logado) -->
+  <div id="container-btn-chat" class="hidden fixed bottom-5 right-5 z-40">
+    <button onclick="alternarJanelaChat()" class="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition hover:scale-105">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
     </button>
   </div>
 
   <!-- Janela do Chat -->
-  <div id="janela-chat" class="hidden fixed bottom-16 right-3 left-3 sm:left-auto sm:right-4 sm:w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 flex flex-col overflow-hidden max-w-sm mx-auto">
-    <div class="bg-indigo-600 text-white p-3 flex justify-between items-center text-xs shrink-0">
+  <div id="janela-chat" class="hidden fixed bottom-20 right-3 left-3 sm:left-auto sm:right-5 sm:w-80 bg-white rounded-3xl shadow-2xl border border-slate-200 z-50 flex flex-col overflow-hidden max-w-sm mx-auto">
+    <div class="bg-indigo-600 text-white p-3.5 flex justify-between items-center text-sm shrink-0">
+      <span class="font-bold">Suporte e Mensagens</span>
       <div class="flex items-center gap-2">
-        <span class="font-bold">Suporte e Mensagens</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <div id="admin-status-indicator" class="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-700 text-indigo-100">
-          <span class="w-1.5 h-1.5 rounded-full bg-slate-300" id="status-dot"></span>
+        <div id="admin-status-indicator" class="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-700 text-indigo-100">
+          <span class="w-2 h-2 rounded-full bg-slate-300" id="status-dot"></span>
           <span id="status-text">Offline</span>
         </div>
         <button onclick="alternarJanelaChat()" class="text-white font-bold p-1">✕</button>
       </div>
     </div>
-    <div id="chat-messages" class="h-52 overflow-y-auto p-3 bg-slate-50 space-y-2 text-xs flex-grow"></div>
-    <form onsubmit="enviarMensagem(event)" class="p-2.5 bg-white border-t space-y-2 shrink-0">
-      <div id="admin-chat-controls" class="hidden flex gap-1 items-center text-[11px]">
+    <div id="chat-messages" class="h-60 overflow-y-auto p-3 bg-slate-50 space-y-2 text-sm flex-grow"></div>
+    <form onsubmit="enviarMensagem(event)" class="p-3 bg-white border-t space-y-2 shrink-0">
+      <div id="admin-chat-controls" class="hidden flex gap-1 items-center text-xs">
         <span class="font-semibold text-slate-600">Para:</span>
-        <select id="chat-destinatario" class="p-1 border rounded bg-white flex-grow text-[11px]">
+        <select id="chat-destinatario" class="p-1.5 border rounded-lg bg-white flex-grow text-xs">
           <option value="todos">Todos (Geral)</option>
         </select>
       </div>
-      <div class="flex gap-1">
-        <input type="text" id="chat-input" placeholder="Mensagem..." required class="flex-grow p-2 border rounded-xl text-xs bg-slate-50">
-        <button type="submit" class="bg-indigo-600 text-white font-semibold px-3 py-2 rounded-xl text-xs">Enviar</button>
+      <div class="flex gap-2">
+        <input type="text" id="chat-input" placeholder="Digite sua mensagem..." required class="flex-grow p-2.5 border rounded-2xl text-sm bg-slate-50">
+        <button type="submit" class="bg-indigo-600 text-white font-semibold px-4 py-2.5 rounded-2xl text-sm">Enviar</button>
       </div>
     </form>
   </div>
 
-  <!-- Cabeçalho Fixo -->
+  <!-- Cabeçalho Fixo (Oculta menu se não logado) -->
   <header class="fixed top-0 left-0 right-0 z-40 bg-blue-800 text-white shadow-md">
-    <div class="max-w-4xl mx-auto p-3 px-4 flex justify-between items-center">
-      <div class="flex items-center space-x-2 truncate">
-        <button onclick="abrirMenuLateral()" class="text-white focus:outline-none p-1 shrink-0">
+    <div class="max-w-4xl mx-auto p-3.5 px-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3 truncate">
+        <button id="btn-menu-lateral" onclick="abrirMenuLateral()" class="hidden text-white focus:outline-none p-1 shrink-0">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
         <div class="flex items-center space-x-2 truncate">
-          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-5 h-5 object-contain shrink-0">
+          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-6 h-6 object-contain shrink-0">
           <div class="truncate">
-            <h1 class="text-xs font-bold tracking-tight truncate">Finanças Pro</h1>
-            <p id="user-role-badge" class="text-[9px] text-blue-200 truncate">Não conectado</p>
+            <h1 class="text-sm font-bold tracking-tight truncate">Finanças Pro</h1>
+            <p id="user-role-badge" class="text-xs text-blue-200 truncate">Não conectado</p>
           </div>
         </div>
       </div>
-      <button id="btn-logout" onclick="logout()" class="hidden bg-blue-900 hover:bg-blue-950 text-xs px-2.5 py-1.5 rounded-lg transition shrink-0">Sair</button>
+      <button id="btn-logout" onclick="logout()" class="hidden bg-blue-900 hover:bg-blue-950 text-xs px-3 py-2 rounded-xl transition shrink-0 font-semibold">Sair</button>
     </div>
   </header>
 
   <!-- Container Principal -->
-  <main class="max-w-4xl mx-auto w-full p-3 flex-grow space-y-4">
+  <main class="max-w-4xl mx-auto w-full p-4 flex-grow space-y-5">
 
     <!-- Tela de Login / Cadastro -->
-    <section id="sec-login" class="bg-white p-5 rounded-2xl shadow-xl border max-w-sm mx-auto my-6">
+    <section id="sec-login" class="bg-white p-6 rounded-3xl shadow-xl border max-w-sm mx-auto my-6">
       <div id="form-login-container">
-        <div class="text-center mb-4">
-          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-12 h-12 mx-auto mb-1">
-          <h2 class="text-lg font-bold text-slate-800">Acesse o Sistema</h2>
+        <div class="text-center mb-5">
+          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-14 h-14 mx-auto mb-2">
+          <h2 class="text-xl font-bold text-slate-800">Acesse o Sistema</h2>
         </div>
-        <form onsubmit="handleLogin(event)" class="space-y-3 text-xs">
+        <form onsubmit="handleLogin(event)" class="space-y-3.5 text-sm">
           <div>
             <label class="block font-semibold text-slate-600 mb-1">E-mail</label>
-            <input type="email" id="login-email" required placeholder="seu@email.com" class="w-full p-2.5 border rounded-xl bg-slate-50">
+            <input type="email" id="login-email" required placeholder="seu@email.com" class="w-full p-3 border rounded-2xl bg-slate-50">
           </div>
           <div>
             <label class="block font-semibold text-slate-600 mb-1">Senha</label>
-            <input type="password" id="login-senha" required placeholder="Senha" class="w-full p-2.5 border rounded-xl bg-slate-50">
+            <input type="password" id="login-senha" required placeholder="Senha" class="w-full p-3 border rounded-2xl bg-slate-50">
           </div>
-          <button type="submit" class="w-full bg-blue-700 text-white font-semibold py-2.5 rounded-xl shadow">Entrar</button>
+          <button type="submit" class="w-full bg-blue-700 text-white font-semibold py-3 rounded-2xl shadow">Entrar</button>
         </form>
-        <div class="mt-4 text-center">
-          <button onclick="alternarTelaCadastro(true)" class="text-xs text-blue-700 font-semibold">Criar nova conta</button>
+        <div class="mt-5 text-center">
+          <button onclick="alternarTelaCadastro(true)" class="text-xs text-blue-700 font-bold">Criar nova conta</button>
         </div>
       </div>
 
       <div id="form-cadastro-container" class="hidden">
-        <div class="text-center mb-4">
-          <h2 class="text-lg font-bold text-slate-800">Criar Nova Conta</h2>
+        <div class="text-center mb-5">
+          <h2 class="text-xl font-bold text-slate-800">Criar Nova Conta</h2>
         </div>
-        <form onsubmit="handleCadastro(event)" class="space-y-3 text-xs">
+        <form onsubmit="handleCadastro(event)" class="space-y-3.5 text-sm">
           <div>
             <label class="block font-semibold text-slate-600 mb-1">Nome</label>
-            <input type="text" id="cad-nome" required placeholder="Seu nome" class="w-full p-2.5 border rounded-xl bg-slate-50">
+            <input type="text" id="cad-nome" required placeholder="Seu nome" class="w-full p-3 border rounded-2xl bg-slate-50">
           </div>
           <div>
             <label class="block font-semibold text-slate-600 mb-1">E-mail</label>
-            <input type="email" id="cad-email" required placeholder="seu@email.com" class="w-full p-2.5 border rounded-xl bg-slate-50">
+            <input type="email" id="cad-email" required placeholder="seu@email.com" class="w-full p-3 border rounded-2xl bg-slate-50">
           </div>
           <div>
             <label class="block font-semibold text-slate-600 mb-1">Senha</label>
-            <input type="password" id="cad-senha" required placeholder="Senha" class="w-full p-2.5 border rounded-xl bg-slate-50">
+            <input type="password" id="cad-senha" required placeholder="Senha" class="w-full p-3 border rounded-2xl bg-slate-50">
           </div>
-          <button type="submit" class="w-full bg-emerald-600 text-white font-semibold py-2.5 rounded-xl shadow">Solicitar Cadastro</button>
+          <button type="submit" class="w-full bg-emerald-600 text-white font-semibold py-3 rounded-2xl shadow">Solicitar Cadastro</button>
         </form>
-        <div class="mt-4 text-center">
+        <div class="mt-5 text-center">
           <button onclick="alternarTelaCadastro(false)" class="text-xs text-slate-600 font-medium">Voltar ao login</button>
         </div>
       </div>
     </section>
 
     <!-- Pendente -->
-    <section id="sec-pendente" class="hidden bg-amber-50 border p-5 rounded-2xl shadow-md max-w-sm mx-auto my-10 text-center space-y-3 text-xs">
-      <h2 class="font-bold text-amber-800 text-sm">Aguardando Liberação</h2>
+    <section id="sec-pendente" class="hidden bg-amber-50 border p-6 rounded-3xl shadow-md max-w-sm mx-auto my-12 text-center space-y-4 text-sm">
+      <h2 class="font-bold text-amber-800 text-base">Aguardando Liberação</h2>
       <p class="text-amber-700">O Administrador precisa aprovar seu acesso.</p>
-      <button onclick="logout()" class="bg-amber-600 text-white px-4 py-2 rounded-xl font-semibold">Sair</button>
+      <button onclick="logout()" class="bg-amber-600 text-white px-5 py-2.5 rounded-2xl font-semibold">Sair</button>
     </section>
 
     <!-- Dashboard Principal -->
-    <div id="sec-dashboard" class="hidden space-y-4">
+    <div id="sec-dashboard" class="hidden space-y-5">
 
-      <!-- Cards de Resumo -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
-          <span class="text-[11px] text-slate-500 font-medium">Receita do Mês</span>
-          <div class="text-xl font-bold text-slate-800 mt-0.5" id="val-receita">R$ 0,00</div>
+      <!-- Cards de Resumo (Sem mostrar a palavra "Receita" na tela principal do usuário comum) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-white p-4.5 rounded-3xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500">
+          <span class="text-xs text-slate-500 font-medium block">Total de Despesas do Mês</span>
+          <div class="text-2xl font-extrabold text-slate-800 mt-1" id="val-despesas">R$ 0,00</div>
         </div>
-        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500">
-          <span class="text-[11px] text-slate-500 font-medium">Despesas do Mês</span>
-          <div class="text-xl font-bold text-slate-800 mt-0.5" id="val-despesas">R$ 0,00</div>
-        </div>
-        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600">
-          <span class="text-[11px] text-slate-500 font-medium">Saldo Atual</span>
-          <div class="text-xl font-bold text-slate-800 mt-0.5" id="val-saldo">R$ 0,00</div>
+        <div class="bg-white p-4.5 rounded-3xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600">
+          <span class="text-xs text-slate-500 font-medium block">Saldo Restante</span>
+          <div class="text-2xl font-extrabold text-slate-800 mt-1" id="val-saldo">R$ 0,00</div>
         </div>
       </div>
 
       <!-- Painel Exclusivo do Administrador (Configurar Renda e Fixas) -->
       <div id="admin-exclusive-panel" class="hidden space-y-4">
-        <section class="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl shadow-sm space-y-3 text-xs">
-          <h3 class="font-bold text-emerald-900">Configuração de Receita e Despesas Fixas (Admin)</h3>
+        <section class="bg-emerald-50 border border-emerald-200 p-5 rounded-3xl shadow-sm space-y-4 text-sm">
+          <h3 class="font-bold text-emerald-900 text-base">Configuração de Receita e Despesas Fixas (Admin)</h3>
           <form onsubmit="salvarReceita(event)" class="flex gap-2">
-            <input type="number" step="0.01" id="input-receita" placeholder="Renda (R$)" required class="flex-grow p-2 border rounded-xl bg-white">
-            <button type="submit" class="bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold shrink-0">Salvar Renda</button>
+            <input type="number" step="0.01" id="input-receita" placeholder="Renda do Mês (R$)" required class="flex-grow p-3 border rounded-2xl bg-white">
+            <button type="submit" class="bg-emerald-600 text-white px-4 py-3 rounded-2xl font-semibold shrink-0">Salvar Renda</button>
           </form>
-          <div class="border-t border-emerald-200 pt-2">
-            <span class="font-bold text-emerald-800 block mb-1">Adicionar Despesa Fixa (Água, Luz, Aluguel...)</span>
+          <div class="border-t border-emerald-200 pt-3">
+            <span class="font-bold text-emerald-800 block mb-2 text-xs uppercase tracking-wider">Adicionar Despesa Fixa (Água, Luz, Aluguel...)</span>
             <form onsubmit="adicionarDespesaFixa(event)" class="flex gap-2">
-              <input type="text" id="fixa-nome" placeholder="Nome" required class="p-2 border rounded-xl bg-white flex-grow">
-              <input type="number" step="0.01" id="fixa-valor" placeholder="R$" required class="p-2 border rounded-xl bg-white w-24">
-              <button type="submit" class="bg-blue-700 text-white px-3 py-2 rounded-xl font-semibold shrink-0">Fixar</button>
+              <input type="text" id="fixa-nome" placeholder="Nome" required class="p-3 border rounded-2xl bg-white flex-grow">
+              <input type="number" step="0.01" id="fixa-valor" placeholder="R$" required class="p-3 border rounded-2xl bg-white w-28">
+              <button type="submit" class="bg-blue-700 text-white px-4 py-3 rounded-2xl font-semibold shrink-0">Fixar</button>
             </form>
           </div>
         </section>
       </div>
 
       <!-- Formulário de Lançamento de Gasto Diário -->
-      <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-xs">
-        <h3 class="font-bold text-slate-800 mb-2">Lançar Novo Gasto / Despesa Diária</h3>
-        <form onsubmit="adicionarGasto(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <input type="text" id="gasto-nome" placeholder="Descrição (Ex: Mercado)" required class="p-2.5 border rounded-xl bg-slate-50">
-          <input type="number" step="0.01" id="gasto-valor" placeholder="Valor (R$)" required class="p-2.5 border rounded-xl bg-slate-50">
-          <button type="submit" class="bg-blue-700 text-white font-semibold py-2.5 px-3 rounded-xl shadow">
+      <section class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 text-sm">
+        <h3 class="font-bold text-slate-800 mb-3 text-base">Lançar Novo Gasto / Despesa Diária</h3>
+        <form onsubmit="adicionarGasto(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <input type="text" id="gasto-nome" placeholder="Descrição (Ex: Mercado)" required class="p-3 border rounded-2xl bg-slate-50">
+          <input type="number" step="0.01" id="gasto-valor" placeholder="Valor (R$)" required class="p-3 border rounded-2xl bg-slate-50">
+          <button type="submit" class="bg-blue-700 text-white font-semibold py-3 px-4 rounded-2xl shadow">
             Registrar Gasto
           </button>
         </form>
       </section>
 
       <!-- Gráfico e Histórico -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
-          <h3 class="text-xs font-bold text-slate-800 mb-2">Distribuição de Despesas</h3>
-          <div class="relative w-full h-52 flex justify-center items-center">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <h3 class="text-sm font-bold text-slate-800 mb-2">Distribuição de Despesas</h3>
+          <div class="relative w-full h-56 flex justify-center items-center">
             <canvas id="chartDespesas"></canvas>
           </div>
         </div>
 
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-          <h3 class="text-xs font-bold text-slate-800 mb-2">Histórico de Gastos do Mês</h3>
-          <div class="overflow-y-auto max-h-52 flex-grow pr-1">
-            <ul id="lista-gastos" class="divide-y divide-slate-100 text-xs"></ul>
+        <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex flex-col">
+          <h3 class="text-sm font-bold text-slate-800 mb-3">Histórico de Gastos do Mês</h3>
+          <div class="overflow-y-auto max-h-56 flex-grow pr-1">
+            <ul id="lista-gastos" class="divide-y divide-slate-100 text-sm"></ul>
           </div>
         </div>
       </div>
@@ -306,6 +303,10 @@
 
     function alternarJanelaChat() {
       document.getElementById('janela-chat').classList.toggle('hidden');
+    }
+
+    function fecharModalAviso() {
+      document.getElementById('modal-aviso-central').classList.add('hidden');
     }
 
     function alternarTelaCadastro(mostrar) {
@@ -386,6 +387,8 @@
       document.getElementById('sec-pendente').classList.add('hidden');
       document.getElementById('sec-dashboard').classList.remove('hidden');
       document.getElementById('btn-logout').classList.remove('hidden');
+      document.getElementById('btn-menu-lateral').classList.remove('hidden');
+      document.getElementById('container-btn-chat').classList.remove('hidden');
 
       const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
       document.getElementById('user-role-badge').innerText = `${currentUser.email} (${isAdmin ? 'Admin' : 'Usuário'})`;
@@ -459,7 +462,7 @@
         if (m === mesSelecionado) mesAtualDiv.innerText = textoFormatado;
 
         const btn = document.createElement('button');
-        btn.className = `w-full text-left p-2 rounded-xl font-medium transition text-xs ${m === mesSelecionado ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`;
+        btn.className = `w-full text-left p-2.5 rounded-xl font-medium transition text-xs ${m === mesSelecionado ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`;
         btn.innerText = textoFormatado;
         btn.onclick = () => { mesSelecionado = m; fecharMenuLateral(); atualizarMenuLateralMeses(); renderUI(); };
         listaMesesDiv.appendChild(btn);
@@ -530,6 +533,12 @@
       await updateDoc(doc(window.db, "usuarios", idUsuario), { aprovado: status });
     }
 
+    async function excluirMensagem(idMsg) {
+      if (!confirm("Apagar esta mensagem?")) return;
+      const { doc, deleteDoc } = window.firebaseModules;
+      await deleteDoc(doc(window.db, "mensagens", idMsg));
+    }
+
     function renderizarMenuUsuarios() {
       const divUsuarios = document.getElementById('drawer-lista-usuarios');
       if (!divUsuarios) return;
@@ -537,13 +546,13 @@
       appData.usuarios.forEach(u => {
         if (u.email === ADMIN_EMAIL || u.isAdmin) return;
         const item = document.createElement('div');
-        item.className = "flex justify-between items-center p-2 bg-slate-50 rounded-lg border";
+        item.className = "flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border text-xs";
         item.innerHTML = `
           <div class="truncate mr-2">
             <span class="font-bold block truncate">${u.nome}</span>
             <span class="text-[10px] text-slate-500 block truncate">${u.email}</span>
           </div>
-          <div class="flex items-center gap-1 shrink-0">
+          <div class="flex items-center gap-1.5 shrink-0">
             <input type="checkbox" ${u.aprovado ? 'checked' : ''} onchange="alterarStatusUsuario('${u.id}', this.checked)" class="w-4 h-4 text-blue-600 rounded">
             <button onclick="excluirUsuario('${u.id}')" class="text-rose-600 font-bold p-1">✕</button>
           </div>
@@ -567,13 +576,11 @@
       document.getElementById('chat-input').value = '';
     }
 
-    function fecharAlertaAdmin() { document.getElementById('admin-alert-banner').classList.add('hidden'); }
-
     function atualizarIndicadorAdminOnline(online) {
       const dot = document.getElementById('status-dot');
       const text = document.getElementById('status-text');
       if (!dot) return;
-      dot.className = `w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-400 animate-pulse' : 'bg-slate-300'}`;
+      dot.className = `w-2 h-2 rounded-full ${online ? 'bg-emerald-400 animate-pulse' : 'bg-slate-300'}`;
       text.innerText = online ? "Online" : "Offline";
     }
 
@@ -593,6 +600,8 @@
 
     function renderUI() {
       const receitaMes = appData.receitas[mesSelecionado] || 0;
+      document.getElementById('drawer-valor-receita').innerText = `R$ ${ receitaMes.toFixed(2) }`;
+
       const fixasMes = appData.despesasFixas[mesSelecionado] || [];
       const totalFixas = fixasMes.reduce((acc, f) => acc + f.valor, 0);
 
@@ -601,7 +610,6 @@
       const totalDespesas = totalFixas + totalGastosDiarios;
       const saldo = receitaMes - totalDespesas;
 
-      document.getElementById('val-receita').innerText = `R$ ${receitaMes.toFixed(2)}`;
       document.getElementById('val-despesas').innerText = `R$ ${totalDespesas.toFixed(2)}`;
       document.getElementById('val-saldo').innerText = `R$ ${saldo.toFixed(2)}`;
 
@@ -611,10 +619,10 @@
 
       fixasMes.forEach(f => {
         const li = document.createElement('li');
-        li.className = "py-2 px-2 flex justify-between items-center border-b border-emerald-100 bg-emerald-50/50 rounded text-xs";
+        li.className = "py-3 px-2 flex justify-between items-center border-b border-emerald-100 bg-emerald-50/50 rounded-xl mb-1 text-sm";
         li.innerHTML = `
           <div class="truncate mr-2"><span class="font-bold text-emerald-900">${f.nome} (Fixa)</span></div>
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex items-center gap-2 shrink-0">
             <span class="font-semibold text-rose-600">- R$ ${f.valor.toFixed(2)}</span>
             ${isAdmin ? `<button onclick="excluirDespesaFixa(${f.id})" class="text-rose-500 font-bold p-1">✕</button>` : ''}
           </div>
@@ -624,13 +632,13 @@
 
       gastosMes.slice().reverse().forEach(gasto => {
         const li = document.createElement('li');
-        li.className = "py-2 px-1 flex justify-between items-center border-b border-slate-100 text-xs";
+        li.className = "py-3 px-2 flex justify-between items-center border-b border-slate-100 text-sm";
         li.innerHTML = `
           <div class="truncate mr-2">
             <span class="font-bold text-slate-700 truncate block">${gasto.nome}</span>
-            <span class="text-[9px] text-slate-400 block">${gasto.usuario}</span>
+            <span class="text-xs text-slate-400 block">${gasto.usuario}</span>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex items-center gap-2 shrink-0">
             <span class="font-semibold text-rose-600">- R$ ${gasto.valor.toFixed(2)}</span>
             ${isAdmin ? `<button onclick="excluirGasto('${gasto.id}')" class="text-rose-500 font-bold p-1">✕</button>` : ''}
           </div>
@@ -647,8 +655,14 @@
         const relevante = isAdmin || eAutor || m.destinatario === "todos" || m.destinatario === currentUser.email;
         if (relevante) {
           const div = document.createElement('div');
-          div.className = `p-2 rounded-xl max-w-[85%] text-xs ${eAutor ? 'bg-indigo-600 text-white ml-auto' : 'bg-slate-200 text-slate-800'}`;
-          div.innerHTML = `<div class="font-bold text-[9px] opacity-80">${m.autor}</div><div>${m.texto}</div>`;
+          div.className = `p-2.5 rounded-2xl max-w-[85%] text-sm relative group ${eAutor ? 'bg-indigo-600 text-white ml-auto' : 'bg-slate-200 text-slate-800'}`;
+          div.innerHTML = `
+            <div class="font-bold text-[10px] opacity-80 flex justify-between gap-4">
+              <span>${m.autor}</span>
+              <button onclick="excluirMensagem('${m.id}')" class="opacity-60 hover:opacity-100 font-bold">✕</button>
+            </div>
+            <div class="mt-0.5">${m.texto}</div>
+          `;
           chatEl.appendChild(div);
           if (!isAdmin && m.autor === ADMIN_EMAIL && (m.destinatario === "todos" || m.destinatario === currentUser.email)) {
             alertaUrgente = m.texto;
@@ -657,8 +671,8 @@
       });
 
       if (alertaUrgente && !isAdmin) {
-        document.getElementById('alert-text-content').innerText = alertaUrgente;
-        document.getElementById('admin-alert-banner').classList.remove('hidden');
+        document.getElementById('modal-texto-aviso').innerText = alertaUrgente;
+        document.getElementById('modal-aviso-central').classList.remove('hidden');
       }
       chatEl.scrollTop = chatEl.scrollHeight;
       renderChart(fixasMes, gastosMes);
@@ -680,13 +694,13 @@
           labels: labels.length ? labels : ['Sem despesas'],
           datasets: [{ data: valores.length ? valores : [1], backgroundColor: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'] }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
       });
     }
 
     function checkConnection() {
-      window.addEventListener('online', () => document.getElementById('status-offline').classList.add('hidden'));
-      window.addEventListener('offline', () => document.getElementById('status-offline').classList.remove('hidden'));
+      window.addEventListener('online', () => document.getElementById('status-offline')?.classList.add('hidden'));
+      window.addEventListener('offline', () => document.getElementById('status-offline')?.classList.remove('hidden'));
     }
 
     function initManifest() {
