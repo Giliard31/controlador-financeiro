@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controlador Financeiro PWA</title>
+  
+  <!-- Configurações do PWA -->
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" id="manifest-placeholder">
+
+  <!-- Tailwind CSS & Chart.js -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- SDKs do Firebase (Versão Modular via CDN) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // ⚠️ SUBSTITUA ABAIXO COM AS CREDENCIAIS DO SEU PROJETO FIREBASE ⚠️
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY_AQUI",
+      authDomain: "SEU_PROJETO.firebaseapp.com",
+      projectId: "SEU_PROJETO_ID",
+      storageBucket: "SEU_PROJETO.appspot.com",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
+
+    // Inicializa o Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Torna globais para usar nas funções do app
+    window.db = db;
+    window.firebaseModules = { collection, addDoc, onSnapshot, doc, setDoc, getDoc };
+    
+    // Dispara o evento de carregamento do app após o Firebase inicializar
+    window.dispatchEvent(new Event('firebase-ready'));
+  </script>
+
+  <style>
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- Banner de Instalação do PWA -->
+  <div id="pwa-install-banner" class="hidden bg-indigo-600 text-white p-3 px-4 flex justify-between items-center shadow-md">
+    <div class="flex items-center space-x-2">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+      <span class="text-sm font-medium">Instalar este aplicativo no seu dispositivo?</span>
+    </div>
+    <button id="btn-install-pwa" class="bg-white text-indigo-600 font-bold px-3 py-1 rounded-md text-xs hover:bg-slate-100 shadow transition">Instalar</button>
+  </div>
+
+  <!-- Indicador Offline -->
+  <div id="status-offline" class="hidden bg-amber-500 text-white text-xs text-center py-1 font-semibold">
+    Você está offline. Exibindo dados locais salvos.
+  </div>
+
+  <!-- Cabeçalho Principal -->
+  <header class="bg-blue-700 text-white shadow-lg p-4">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <div>
+        <h1 class="text-xl font-bold tracking-wide">Finanças Control</h1>
+        <p id="user-role-badge" class="text-xs text-blue-200">Não conectado</p>
+      </div>
+      <button id="btn-logout" onclick="logout()" class="hidden bg-blue-800 hover:bg-blue-900 text-xs px-3 py-1.5 rounded transition">Sair</button>
+    </div>
+  </header>
+
+  <!-- Container Principal -->
+  <main class="max-w-4xl mx-auto w-full p-4 flex-grow space-y-6">
+
+    <!-- Tela de Login por E-mail -->
+    <section id="sec-login" class="bg-white p-6 rounded-xl shadow-md border border-slate-200 max-w-md mx-auto my-10">
+      <h2 class="text-xl font-bold mb-4 text-slate-700 text-center">Acesse o Sistema</h2>
+      <p class="text-xs text-slate-500 mb-4 text-center">Digite seu e-mail para definir seu perfil (Administrador ou Usuário).</p>
+      
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail de Acesso</label>
+          <input type="email" id="input-email" required placeholder="admin@admin.com ou seu@email.com" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm shadow transition">Entrar no Painel</button>
+      </form>
+    </section>
+
+    <!-- Painel Principal -->
+    <div id="sec-dashboard" class="hidden space-y-6">
+
+      <!-- Cards de Resumo -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
+          <span class="text-xs text-slate-500 font-medium">Receita Total (Admin)</span>
+          <div class="text-2xl font-bold text-slate-800 mt-1" id="val-receita">R$ 0,00</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-red-500">
+          <span class="text-xs text-slate-500 font-medium">Total de Despesas</span>
+          <div class="text-2xl font-bold text-slate-800 mt-1" id="val-despesas">R$ 0,00</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
+          <span class="text-xs text-slate-500 font-medium">Saldo Atual</span>
+          <div class="text-2xl font-bold text-slate-800 mt-1" id="val-saldo">R$ 0,00</div>
+        </div>
+      </div>
+
+      <!-- Configuração de Receita (Admin) -->
+      <section id="admin-income-panel" class="hidden bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+        <h3 class="text-sm font-bold text-emerald-800 mb-2">Definir/Atualizar Receita Mensal</h3>
+        <form onsubmit="salvarReceita(event)" class="flex gap-2">
+          <input type="number" step="0.01" id="input-receita" placeholder="Valor da Renda (R$)" required class="flex-grow p-2 border border-emerald-300 rounded-lg text-sm">
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-lg font-semibold">Atualizar</button>
+        </form>
+      </section>
+
+      <!-- Formulário de Gasto -->
+      <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+          <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+          Lançar Novo Gasto / Despesa
+        </h3>
+        <form onsubmit="adicionarGasto(event)" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input type="text" id="gasto-nome" placeholder="Descrição (ex: Mercado, Combustível)" required class="p-2 border border-slate-300 rounded-lg text-sm">
+          <input type="number" step="0.01" id="gasto-valor" placeholder="Valor (R$)" required class="p-2 border border-slate-300 rounded-lg text-sm">
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition">
+            Lançar Gasto
+          </button>
+        </form>
+      </section>
+
+      <!-- Gráfico e Histórico -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <h3 class="text-sm font-bold text-slate-700 mb-2">Distribuição de Despesas</h3>
+          <div class="relative w-full h-64 flex justify-center items-center">
+            <canvas id="chartDespesas"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+          <h3 class="text-sm font-bold text-slate-700 mb-3">Histórico de Gastos (Tempo Real)</h3>
+          <div class="overflow-y-auto max-h-60 flex-grow">
+            <ul id="lista-gastos" class="divide-y divide-slate-100 text-xs"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Módulo de Mensagens -->
+      <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+          Módulo de Avisos e Mensagens
+        </h3>
+        <div id="chat-messages" class="h-32 overflow-y-auto border border-slate-200 p-3 rounded-lg mb-3 bg-slate-50 space-y-2 text-xs"></div>
+        <form onsubmit="enviarMensagem(event)" class="flex gap-2">
+          <input type="text" id="chat-input" placeholder="Digite um aviso..." required class="flex-grow p-2 border border-slate-300 rounded-lg text-xs">
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg text-xs">Enviar</button>
+        </form>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    const ADMIN_EMAIL = "admin@admin.com"; // Altere para o seu e-mail de admin se preferir
+    let currentUser = localStorage.getItem('pwa_user') || null;
+    let chartInstance = null;
+
+    let appData = {
+      receita: 0,
+      gastos: [],
+      mensagens: []
+    };
+
+    window.addEventListener('firebase-ready', () => {
+      initApp();
+    });
+
+    window.addEventListener('load', () => {
+      initManifest();
+      initServiceWorker();
+      checkConnection();
+      if (currentUser) showDashboard();
+    });
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('input-email').value.trim().toLowerCase();
+      if (!email) return;
+      currentUser = email;
+      localStorage.setItem('pwa_user', currentUser);
+      showDashboard();
+    }
+
+    function logout() {
+      localStorage.removeItem('pwa_user');
+      location.reload();
+    }
+
+    function showDashboard() {
+      document.getElementById('sec-login').classList.add('hidden');
+      document.getElementById('sec-dashboard').classList.remove('hidden');
+      document.getElementById('btn-logout').classList.remove('hidden');
+
+      const isAdmin = (currentUser === ADMIN_EMAIL);
+      document.getElementById('user-role-badge').innerText = `${currentUser} (${isAdmin ? 'Administrador' : 'Usuário'})`;
+      if (isAdmin) document.getElementById('admin-income-panel').classList.remove('hidden');
+
+      ouvirDadosFirebase();
+    }
+
+    // Sincronização em Tempo Real com o Firestore
+    function ouvirDadosFirebase() {
+      const { collection, onSnapshot, doc, getDoc } = window.firebaseModules;
+      const db = window.db;
+
+      // Ouve a Receita global
+      onSnapshot(doc(db, "financeiro", "config"), (docSnap) => {
+        if (docSnap.exists()) {
+          appData.receita = docSnap.data().receita || 0;
+          renderUI();
+        }
+      });
+
+      // Ouve os Gastos em tempo real
+      onSnapshot(collection(db, "gastos"), (snapshot) => {
+        appData.gastos = [];
+        snapshot.forEach((doc) => {
+          appData.gastos.push({ id: doc.id, ...doc.data() });
+        });
+        // Ordena por horário
+        appData.gastos.sort((a, b) => a.timestamp - b.timestamp);
+        renderUI();
+      });
+
+      // Ouve as Mensagens em tempo real
+      onSnapshot(collection(db, "mensagens"), (snapshot) => {
+        appData.mensagens = [];
+        snapshot.forEach((doc) => {
+          appData.mensagens.push({ id: doc.id, ...doc.data() });
+        });
+        appData.mensagens.sort((a, b) => a.timestamp - b.timestamp);
+        renderUI();
+      });
+    }
+
+    async function salvarReceita(e) {
+      e.preventDefault();
+      const valor = parseFloat(document.getElementById('input-receita').value);
+      if (isNaN(valor)) return;
+
+      const { doc, setDoc } = window.firebaseModules;
+      await setDoc(doc(window.db, "financeiro", "config"), { receita: valor });
+      document.getElementById('input-receita').value = '';
+    }
+
+    async function adicionarGasto(e) {
+      e.preventDefault();
+      const nome = document.getElementById('gasto-nome').value.trim();
+      const valor = parseFloat(document.getElementById('gasto-valor').value);
+      if (!nome || isNaN(valor)) return;
+
+      const { collection, addDoc } = window.firebaseModules;
+      await addDoc(collection(window.db, "gastos"), {
+        usuario: currentUser,
+        nome: nome,
+        valor: valor,
+        timestamp: Date.now(),
+        data: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      });
+
+      document.getElementById('gasto-nome').value = '';
+      document.getElementById('gasto-valor').value = '';
+    }
+
+    async function enviarMensagem(e) {
+      e.preventDefault();
+      const txt = document.getElementById('chat-input').value.trim();
+      if (!txt) return;
+
+      const { collection, addDoc } = window.firebaseModules;
+      await addDoc(collection(window.db, "mensagens"), {
+        autor: currentUser,
+        texto: txt,
+        timestamp: Date.now(),
+        hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      });
+
+      document.getElementById('chat-input').value = '';
+    }
+
+    // Renderização Visual
+    function renderUI() {
+      const totalDespesas = appData.gastos.reduce((acc, item) => acc + item.valor, 0);
+      const saldo = appData.receita - totalDespesas;
+
+      document.getElementById('val-receita').innerText = `R$ ${appData.receita.toFixed(2)}`;
+      document.getElementById('val-despesas').innerText = `R$ ${totalDespesas.toFixed(2)}`;
+      document.getElementById('val-saldo').innerText = `R$ ${saldo.toFixed(2)}`;
+
+      // Lista de Gastos
+      const listaEl = document.getElementById('lista-gastos');
+      listaEl.innerHTML = '';
+      appData.gastos.slice().reverse().forEach(gasto => {
+        const li = document.createElement('li');
+        li.className = "py-2 flex justify-between items-center";
+        li.innerHTML = `
+          <div>
+            <span class="font-bold text-slate-700">${gasto.nome}</span>
+            <span class="block text-[10px] text-slate-400">Por: ${gasto.usuario} às ${gasto.data}</span>
+          </div>
+          <span class="font-semibold text-red-600">- R$ ${gasto.valor.toFixed(2)}</span>
+        `;
+        listaEl.appendChild(li);
+      });
+
+      // Chat
+      const chatEl = document.getElementById('chat-messages');
+      chatEl.innerHTML = '';
+      appData.mensagens.forEach(m => {
+        const div = document.createElement('div');
+        const eAdmin = (m.autor === ADMIN_EMAIL);
+        div.className = `p-2 rounded-lg max-w-[85%] ${eAdmin ? 'bg-indigo-100 text-indigo-900 ml-auto' : 'bg-slate-200 text-slate-800'}`;
+        div.innerHTML = `<div class="font-bold text-[10px] opacity-75">${m.autor} - ${m.hora}</div><div>${m.texto}</div>`;
+        chatEl.appendChild(div);
+      });
+      chatEl.scrollTop = chatEl.scrollHeight;
+
+      renderChart();
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('chartDespesas').getContext('2d');
+      const agrupado = {};
+      appData.gastos.forEach(g => {
+        agrupado[g.nome] = (agrupado[g.nome] || 0) + g.valor;
+      });
+
+      const labels = Object.keys(agrupado);
+      const valores = Object.values(agrupado);
+
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels.length ? labels : ['Sem Gastos'],
+          datasets: [{
+            data: valores.length ? valores : [1],
+            backgroundColor: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
+        }
+      });
+    }
+
+    function checkConnection() {
+      const banner = document.getElementById('status-offline');
+      window.addEventListener('online', () => banner.classList.add('hidden'));
+      window.addEventListener('offline', () => banner.classList.remove('hidden'));
+      if (!navigator.onLine) banner.classList.remove('hidden');
+    }
+
+    function initManifest() {
+      const manifestData = {
+        name: "Controlador Financeiro PWA", short_name: "Finanças",
+        start_url: "./", display: "standalone",
+        background_color: "#ffffff", theme_color: "#2563eb",
+        icons: [{ src: "https://via.placeholder.com/192/2563eb/ffffff?text=PWA", sizes: "192x192", type: "image/png" }]
+      };
+      const blob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+      document.getElementById('manifest-placeholder').setAttribute('href', URL.createObjectURL(blob));
+    }
+
+    function initServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        const swCode = `self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => caches.match(e.request))); });`;
+        navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], { type: 'text/javascript' })));
+      }
+    }
+
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('pwa-install-banner').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-install-pwa')?.addEventListener('click', () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('pwa-install-banner').classList.add('hidden'); });
+      }
+    });
+  </script>
+</body>
+</html>
