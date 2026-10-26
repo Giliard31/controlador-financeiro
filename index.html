@@ -15,19 +15,18 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- SDKs do Firebase -->
+  <!-- SDKs do Firebase com as suas novas credenciais -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, updateDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyCvAYTxZAWw2b3i82De2AfxlVxiOGtvKco",
-      authDomain: "controladorfinanceiro-22c02.firebaseapp.com",
-      projectId: "controladorfinanceiro-22c02",
-      storageBucket: "controladorfinanceiro-22c02.firebasestorage.app",
-      messagingSenderId: "4355721192",
-      appId: "1:4355721192:web:d49e5afa4a91d25471865d",
-      measurementId: "G-VEVPX6LZMF"
+      apiKey: "AIzaSyCz3X_YrYt6o9UATBCiH2Gy_ojcf20Y2GU",
+      authDomain: "controle-finaceiro-7f6d0.firebaseapp.com",
+      projectId: "controle-finaceiro-7f6d0",
+      storageBucket: "controle-finaceiro-7f6d0.firebasestorage.app",
+      messagingSenderId: "171455283903",
+      appId: "1:171455283903:web:37b61e41d83c85b5ea3c0a"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -152,7 +151,7 @@
         </div>
       </div>
 
-      <!-- Painel Exclusivo do Administrador (Receita e Aprovação de Usuários) -->
+      <!-- Painel Exclusivo do Administrador -->
       <div id="admin-exclusive-panel" class="hidden space-y-6">
         <section class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
           <h3 class="text-sm font-bold text-emerald-800 mb-2">Definir/Atualizar Receita Mensal (Admin)</h3>
@@ -174,9 +173,7 @@
                   <th class="p-2 text-center">Aprovado / Liberado</th>
                 </tr>
               </thead>
-              <tbody id="tabela-usuarios" class="divide-y divide-slate-100">
-                <!-- Preenchido via script -->
-              </tbody>
+              <tbody id="tabela-usuarios" class="divide-y divide-slate-100"></tbody>
             </table>
           </div>
         </section>
@@ -258,7 +255,6 @@
       }
     }
 
-    // Cadastro de Usuários no Firebase
     async function handleCadastro(e) {
       e.preventDefault();
       const nome = document.getElementById('cad-nome').value.trim();
@@ -283,11 +279,10 @@
         criadoEm: Date.now()
       });
 
-      alert("Cadastro realizado! Aguarde a liberação do administrador no Firebase para acessar.");
+      alert("Cadastro realizado com sucesso! Aguarde a liberação do administrador no Firestore do Firebase.");
       alternarTelaCadastro(false);
     }
 
-    // Processo de Login
     async function handleLogin(e) {
       e.preventDefault();
       const email = document.getElementById('login-email').value.trim().toLowerCase();
