@@ -55,7 +55,7 @@
     </div>
   </div>
 
-  <!-- Menu Lateral Deslizante (Gaveta) com Configurações do Admin e Histórico -->
+  <!-- Menu Lateral Deslizante (Gaveta) com Configurações e Histórico -->
   <div id="drawer-overlay" class="fixed inset-0 bg-black/50 z-50 hidden transition-opacity" onclick="fecharMenuLateral()"></div>
   <div id="drawer-menu" class="fixed top-0 left-0 bottom-0 w-4/5 max-w-xs bg-white z-50 shadow-2xl transform -translate-x-full transition-transform duration-300 flex flex-col">
     <div class="bg-blue-800 text-white p-4 flex justify-between items-center shrink-0">
@@ -68,32 +68,46 @@
     
     <div class="p-4 overflow-y-auto flex-grow space-y-5 text-sm">
       
-      <!-- Painel Exclusivo do Admin na Gaveta (Receita e Fixas) -->
+      <!-- Painel Exclusivo do Admin na Gaveta (Receita, Renda Extra e Fixas) -->
       <div id="drawer-admin-config" class="hidden bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl space-y-3">
-        <span class="font-bold text-emerald-900 text-xs uppercase tracking-wider block">Gerenciar Receita & Fixas</span>
+        <span class="font-bold text-emerald-900 text-xs uppercase tracking-wider block">Gerenciar Finanças</span>
         
-        <form onsubmit="salvarReceita(event)" class="space-y-2">
-          <label class="text-[11px] font-semibold text-emerald-800 block">Renda do Mês:</label>
+        <form onsubmit="salvarReceita(event)" class="space-y-1.5">
+          <label class="text-[11px] font-semibold text-emerald-800 block">Renda Principal:</label>
           <div class="flex gap-1.5">
             <input type="number" step="0.01" id="input-receita" placeholder="Valor (R$)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
             <button type="submit" class="bg-emerald-600 text-white px-3 py-2 rounded-xl text-xs font-semibold shrink-0">Salvar</button>
           </div>
         </form>
 
-        <div class="border-t border-emerald-200 pt-2 space-y-2">
+        <form onsubmit="adicionarRendaExtra(event)" class="space-y-1.5 border-t border-emerald-200 pt-2">
+          <label class="text-[11px] font-semibold text-emerald-800 block">Adicionar Renda Extra:</label>
+          <input type="text" id="extra-nome" placeholder="Descrição (Ex: Corrida)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+          <div class="flex gap-1.5">
+            <input type="number" step="0.01" id="extra-valor" placeholder="Valor (R$)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+            <button type="submit" class="bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shrink-0">Adicionar</button>
+          </div>
+        </form>
+
+        <div class="border-t border-emerald-200 pt-2 space-y-1.5">
           <label class="text-[11px] font-semibold text-emerald-800 block">Adicionar Despesa Fixa:</label>
-          <form onsubmit="adicionarDespesaFixa(event)" class="space-y-2">
-            <input type="text" id="fixa-nome" placeholder="Nome (Ex: Aluguel)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+          <input type="text" id="fixa-nome" placeholder="Nome (Ex: Aluguel)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+          <div class="flex gap-1.5">
             <input type="number" step="0.01" id="fixa-valor" placeholder="Valor (R$)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
-            <button type="submit" class="w-full bg-blue-700 text-white py-2 rounded-xl text-xs font-semibold">Cadastrar Fixa</button>
-          </form>
+            <button type="submit" class="bg-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shrink-0">Fixar</button>
+          </div>
         </div>
       </div>
 
-      <!-- Receita Secreta / Visível para Usuário no Menu -->
-      <div id="drawer-receita-card" class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl">
-        <span class="font-bold text-emerald-800 text-xs uppercase tracking-wider block mb-1">Receita do Mês</span>
-        <div id="drawer-valor-receita" class="text-lg font-extrabold text-emerald-900">R$ 0,00</div>
+      <!-- Receita Total Visível para Usuário no Menu -->
+      <div id="drawer-receita-card" class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl space-y-2">
+        <div>
+          <span class="font-bold text-emerald-800 text-xs uppercase tracking-wider block">Receita Total do Mês</span>
+          <div id="drawer-valor-receita" class="text-lg font-extrabold text-emerald-900 mt-0.5">R$ 0,00</div>
+        </div>
+        <div id="drawer-lista-extras-user" class="border-t border-emerald-200 pt-2 space-y-1">
+          <!-- Rendas extras cadastradas aparecem aqui -->
+        </div>
       </div>
 
       <div>
@@ -228,7 +242,7 @@
     <!-- Dashboard Principal -->
     <div id="sec-dashboard" class="hidden space-y-5">
 
-      <!-- Cards de Resumo Lado a Lado perfeitamente adaptados -->
+      <!-- Cards de Resumo Lado a Lado -->
       <div class="grid grid-cols-2 gap-3">
         <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500">
           <span class="text-xs text-slate-500 font-medium block truncate">Despesas do Mês</span>
@@ -276,7 +290,7 @@
     const ADMIN_EMAIL = "giliard@admin.com";
     let currentUser = JSON.parse(localStorage.getItem('pwa_user')) || null;
     let chartInstance = null;
-    let appData = { receitas: {}, gastos: [], mensagens: [], usuarios: [], despesasFixas: {} };
+    let appData = { receitas: {}, rendasExtras: {}, gastos: [], mensagens: [], usuarios: [], despesasFixas: {} };
     
     const dataAtualObj = new Date();
     let mesSelecionado = `${dataAtualObj.getFullYear()}-${String(dataAtualObj.getMonth() + 1).padStart(2, '0')}`;
@@ -407,7 +421,7 @@
         document.getElementById('drawer-admin-config').classList.remove('hidden');
         document.getElementById('admin-chat-controls').classList.remove('hidden');
         document.getElementById('drawer-admin-usuarios').classList.remove('hidden');
-        document.getElementById('drawer-receita-card').classList.add('hidden'); // Admin configura no formulário acima
+        document.getElementById('drawer-receita-card').classList.add('hidden');
       } else {
         document.getElementById('drawer-receita-card').classList.remove('hidden');
       }
@@ -422,6 +436,7 @@
         if (docSnap.exists()) {
           const dados = docSnap.data();
           appData.receitas = dados.receitas || {};
+          appData.rendasExtras = dados.rendasExtras || {};
           appData.despesasFixas = dados.despesasFixas || {};
           renderUI();
         }
@@ -489,9 +504,32 @@
       if (isNaN(valor)) return;
       const { doc, setDoc } = window.firebaseModules;
       appData.receitas[mesSelecionado] = valor;
-      await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, despesasFixas: appData.despesasFixas }, { merge: true });
+      await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, rendasExtras: appData.rendasExtras, despesasFixas: appData.despesasFixas }, { merge: true });
       document.getElementById('input-receita').value = '';
-      mostrarNotificacao("Receita do mês atualizada com sucesso!");
+      mostrarNotificacao("Renda principal atualizada!");
+    }
+
+    async function adicionarRendaExtra(e) {
+      e.preventDefault();
+      const nome = document.getElementById('extra-nome').value.trim();
+      const valor = parseFloat(document.getElementById('extra-valor').value);
+      if (!nome || isNaN(valor)) return;
+
+      if (!appData.rendasExtras[mesSelecionado]) appData.rendasExtras[mesSelecionado] = [];
+      appData.rendasExtras[mesSelecionado].push({ id: Date.now(), nome, valor });
+
+      const { doc, setDoc } = window.firebaseModules;
+      await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, rendasExtras: appData.rendasExtras, despesasFixas: appData.despesasFixas }, { merge: true });
+      document.getElementById('extra-nome').value = '';
+      document.getElementById('extra-valor').value = '';
+      mostrarNotificacao("Renda extra adicionada com sucesso!");
+    }
+
+    async function excluirRendaExtra(idExtra) {
+      if (!confirm("Remover esta renda extra?")) return;
+      appData.rendasExtras[mesSelecionado] = appData.rendasExtras[mesSelecionado].filter(e => e.id !== idExtra);
+      const { doc, setDoc } = window.firebaseModules;
+      await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, rendasExtras: appData.rendasExtras, despesasFixas: appData.despesasFixas }, { merge: true });
     }
 
     async function adicionarDespesaFixa(e) {
@@ -504,7 +542,7 @@
       appData.despesasFixas[mesSelecionado].push({ id: Date.now(), nome, valor });
 
       const { doc, setDoc } = window.firebaseModules;
-      await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, despesasFixas: appData.despesasFixas }, { merge: true });
+      await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, rendasExtras: appData.rendasExtras, despesasFixas: appData.despesasFixas }, { merge: true });
       document.getElementById('fixa-nome').value = '';
       document.getElementById('fixa-valor').value = '';
       mostrarNotificacao("Despesa fixa adicionada com sucesso!");
@@ -514,7 +552,7 @@
       if (!confirm("Remover esta despesa fixa?")) return;
       appData.despesasFixas[mesSelecionado] = appData.despesasFixas[mesSelecionado].filter(f => f.id !== idFixa);
       const { doc, setDoc } = window.firebaseModules;
-      await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, despesasFixas: appData.despesasFixas }, { merge: true });
+      await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, rendasExtras: appData.rendasExtras, despesasFixas: appData.despesasFixas }, { merge: true });
     }
 
     async function adicionarGasto(e) {
@@ -615,8 +653,27 @@
     }
 
     function renderUI() {
-      const receitaMes = appData.receitas[mesSelecionado] || 0;
-      document.getElementById('drawer-valor-receita').innerText = `R$ ${receitaMes.toFixed(2)}`;
+      const receitaPrincipal = appData.receitas[mesSelecionado] || 0;
+      const extrasMes = appData.rendasExtras[mesSelecionado] || [];
+      const totalExtras = extrasMes.reduce((acc, e) => acc + e.valor, 0);
+      const receitaTotal = receitaPrincipal + totalExtras;
+
+      document.getElementById('drawer-valor-receita').innerText = `R$ ${receitaTotal.toFixed(2)}`;
+
+      // Renderiza lista de extras no menu lateral
+      const listaExtrasDiv = document.getElementById('drawer-lista-extras-user');
+      if (listaExtrasDiv) {
+        listaExtrasDiv.innerHTML = '';
+        extrasMes.forEach(ex => {
+          const divItem = document.createElement('div');
+          divItem.className = "flex justify-between items-center text-xs text-emerald-800 bg-emerald-100/60 p-1.5 rounded-lg";
+          divItem.innerHTML = `
+            <span class="truncate mr-1">+ ${ex.nome}: <strong>R$ ${ex.valor.toFixed(2)}</strong></span>
+            <button onclick="excluirRendaExtra(${ex.id})" class="text-rose-600 font-bold px-1">✕</button>
+          `;
+          listaExtrasDiv.appendChild(divItem);
+        });
+      }
 
       const fixasMes = appData.despesasFixas[mesSelecionado] || [];
       const totalFixas = fixasMes.reduce((acc, f) => acc + f.valor, 0);
@@ -624,7 +681,7 @@
       const gastosMes = appData.gastos.filter(g => g.mesAno === mesSelecionado);
       const totalGastosDiarios = gastosMes.reduce((acc, item) => acc + item.valor, 0);
       const totalDespesas = totalFixas + totalGastosDiarios;
-      const saldo = receitaMes - totalDespesas;
+      const saldo = receitaTotal - totalDespesas;
 
       document.getElementById('val-despesas').innerText = `R$ ${totalDespesas.toFixed(2)}`;
       document.getElementById('val-saldo').innerText = `R$ ${saldo.toFixed(2)}`;
