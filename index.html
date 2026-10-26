@@ -45,30 +45,53 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col pt-16 overflow-x-hidden">
 
-  <!-- Modal Central para Mensagens Urgentes ao Logar -->
+  <!-- Modal Central Moderno para Alertas / Notificações -->
   <div id="modal-aviso-central" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 animate-scaleUp">
-      <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">⚠️</div>
-      <h3 class="font-bold text-lg text-slate-800">Mensagem do Administrador</h3>
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
+      <div id="modal-icone-aviso" class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">ℹ️</div>
+      <h3 id="modal-titulo-aviso" class="font-bold text-lg text-slate-800">Aviso do Sistema</h3>
       <p id="modal-texto-aviso" class="text-sm text-slate-600 leading-relaxed"></p>
       <button onclick="fecharModalAviso()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 rounded-2xl text-sm shadow">Entendido</button>
     </div>
   </div>
 
-  <!-- Menu Lateral Deslizante (Gaveta) -->
+  <!-- Menu Lateral Deslizante (Gaveta) com Configurações do Admin e Histórico -->
   <div id="drawer-overlay" class="fixed inset-0 bg-black/50 z-50 hidden transition-opacity" onclick="fecharMenuLateral()"></div>
   <div id="drawer-menu" class="fixed top-0 left-0 bottom-0 w-4/5 max-w-xs bg-white z-50 shadow-2xl transform -translate-x-full transition-transform duration-300 flex flex-col">
     <div class="bg-blue-800 text-white p-4 flex justify-between items-center shrink-0">
       <div class="flex items-center space-x-2">
         <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-7 h-7">
-        <h2 class="font-bold text-sm">Menu & Finanças</h2>
+        <h2 class="font-bold text-sm">Menu & Configurações</h2>
       </div>
       <button onclick="fecharMenuLateral()" class="text-white font-bold text-xl p-1">✕</button>
     </div>
     
     <div class="p-4 overflow-y-auto flex-grow space-y-5 text-sm">
-      <!-- Receita Secreta / Visível no Menu -->
-      <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl">
+      
+      <!-- Painel Exclusivo do Admin na Gaveta (Receita e Fixas) -->
+      <div id="drawer-admin-config" class="hidden bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl space-y-3">
+        <span class="font-bold text-emerald-900 text-xs uppercase tracking-wider block">Gerenciar Receita & Fixas</span>
+        
+        <form onsubmit="salvarReceita(event)" class="space-y-2">
+          <label class="text-[11px] font-semibold text-emerald-800 block">Renda do Mês:</label>
+          <div class="flex gap-1.5">
+            <input type="number" step="0.01" id="input-receita" placeholder="Valor (R$)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+            <button type="submit" class="bg-emerald-600 text-white px-3 py-2 rounded-xl text-xs font-semibold shrink-0">Salvar</button>
+          </div>
+        </form>
+
+        <div class="border-t border-emerald-200 pt-2 space-y-2">
+          <label class="text-[11px] font-semibold text-emerald-800 block">Adicionar Despesa Fixa:</label>
+          <form onsubmit="adicionarDespesaFixa(event)" class="space-y-2">
+            <input type="text" id="fixa-nome" placeholder="Nome (Ex: Aluguel)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+            <input type="number" step="0.01" id="fixa-valor" placeholder="Valor (R$)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+            <button type="submit" class="w-full bg-blue-700 text-white py-2 rounded-xl text-xs font-semibold">Cadastrar Fixa</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Receita Secreta / Visível para Usuário no Menu -->
+      <div id="drawer-receita-card" class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl">
         <span class="font-bold text-emerald-800 text-xs uppercase tracking-wider block mb-1">Receita do Mês</span>
         <div id="drawer-valor-receita" class="text-lg font-extrabold text-emerald-900">R$ 0,00</div>
       </div>
@@ -91,7 +114,7 @@
     </div>
   </div>
 
-  <!-- Botão Flutuante do Chat (Oculto se não logado) -->
+  <!-- Botão Flutuante do Chat -->
   <div id="container-btn-chat" class="hidden fixed bottom-5 right-5 z-40">
     <button onclick="alternarJanelaChat()" class="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition hover:scale-105">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
@@ -125,7 +148,7 @@
     </form>
   </div>
 
-  <!-- Cabeçalho Fixo (Oculta menu se não logado) -->
+  <!-- Cabeçalho Fixo -->
   <header class="fixed top-0 left-0 right-0 z-40 bg-blue-800 text-white shadow-md">
     <div class="max-w-4xl mx-auto p-3.5 px-4 flex justify-between items-center">
       <div class="flex items-center space-x-3 truncate">
@@ -205,35 +228,16 @@
     <!-- Dashboard Principal -->
     <div id="sec-dashboard" class="hidden space-y-5">
 
-      <!-- Cards de Resumo (Sem mostrar a palavra "Receita" na tela principal do usuário comum) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="bg-white p-4.5 rounded-3xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500">
-          <span class="text-xs text-slate-500 font-medium block">Total de Despesas do Mês</span>
-          <div class="text-2xl font-extrabold text-slate-800 mt-1" id="val-despesas">R$ 0,00</div>
+      <!-- Cards de Resumo Lado a Lado perfeitamente adaptados -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500">
+          <span class="text-xs text-slate-500 font-medium block truncate">Despesas do Mês</span>
+          <div class="text-lg sm:text-2xl font-extrabold text-slate-800 mt-1 truncate" id="val-despesas">R$ 0,00</div>
         </div>
-        <div class="bg-white p-4.5 rounded-3xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600">
-          <span class="text-xs text-slate-500 font-medium block">Saldo Restante</span>
-          <div class="text-2xl font-extrabold text-slate-800 mt-1" id="val-saldo">R$ 0,00</div>
+        <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600">
+          <span class="text-xs text-slate-500 font-medium block truncate">Saldo Restante</span>
+          <div class="text-lg sm:text-2xl font-extrabold text-slate-800 mt-1 truncate" id="val-saldo">R$ 0,00</div>
         </div>
-      </div>
-
-      <!-- Painel Exclusivo do Administrador (Configurar Renda e Fixas) -->
-      <div id="admin-exclusive-panel" class="hidden space-y-4">
-        <section class="bg-emerald-50 border border-emerald-200 p-5 rounded-3xl shadow-sm space-y-4 text-sm">
-          <h3 class="font-bold text-emerald-900 text-base">Configuração de Receita e Despesas Fixas (Admin)</h3>
-          <form onsubmit="salvarReceita(event)" class="flex gap-2">
-            <input type="number" step="0.01" id="input-receita" placeholder="Renda do Mês (R$)" required class="flex-grow p-3 border rounded-2xl bg-white">
-            <button type="submit" class="bg-emerald-600 text-white px-4 py-3 rounded-2xl font-semibold shrink-0">Salvar Renda</button>
-          </form>
-          <div class="border-t border-emerald-200 pt-3">
-            <span class="font-bold text-emerald-800 block mb-2 text-xs uppercase tracking-wider">Adicionar Despesa Fixa (Água, Luz, Aluguel...)</span>
-            <form onsubmit="adicionarDespesaFixa(event)" class="flex gap-2">
-              <input type="text" id="fixa-nome" placeholder="Nome" required class="p-3 border rounded-2xl bg-white flex-grow">
-              <input type="number" step="0.01" id="fixa-valor" placeholder="R$" required class="p-3 border rounded-2xl bg-white w-28">
-              <button type="submit" class="bg-blue-700 text-white px-4 py-3 rounded-2xl font-semibold shrink-0">Fixar</button>
-            </form>
-          </div>
-        </section>
       </div>
 
       <!-- Formulário de Lançamento de Gasto Diário -->
@@ -305,6 +309,12 @@
       document.getElementById('janela-chat').classList.toggle('hidden');
     }
 
+    function mostrarNotificacao(texto, titulo = "Aviso do Sistema") {
+      document.getElementById('modal-titulo-aviso').innerText = titulo;
+      document.getElementById('modal-texto-aviso').innerText = texto;
+      document.getElementById('modal-aviso-central').classList.remove('hidden');
+    }
+
     function fecharModalAviso() {
       document.getElementById('modal-aviso-central').classList.add('hidden');
     }
@@ -328,11 +338,11 @@
       const { collection, addDoc, getDocs, query, where } = window.firebaseModules;
       const q = query(collection(window.db, "usuarios"), where("email", "==", email));
       const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) { alert("E-mail já cadastrado!"); return; }
+      if (!querySnapshot.empty) { mostrarNotificacao("Este e-mail já está cadastrado no sistema."); return; }
 
       const eAdmin = (email === ADMIN_EMAIL);
       await addDoc(collection(window.db, "usuarios"), { nome, email, senha, aprovado: eAdmin, isAdmin: eAdmin, online: false, criadoEm: Date.now() });
-      alert(eAdmin ? "Admin cadastrado!" : "Solicitação enviada!");
+      mostrarNotificacao(eAdmin ? "Cadastro de Administrador realizado com sucesso!" : "Solicitação enviada! Aguarde a aprovação do Administrador.");
       alternarTelaCadastro(false);
     }
 
@@ -344,12 +354,12 @@
       const { collection, getDocs, query, where } = window.firebaseModules;
       const q = query(collection(window.db, "usuarios"), where("email", "==", email));
       const querySnapshot = await getDocs(q);
-      if (querySnapshot.empty) { alert("E-mail não encontrado!"); return; }
+      if (querySnapshot.empty) { mostrarNotificacao("E-mail não encontrado. Verifique ou crie uma conta."); return; }
 
       let userData = null;
       querySnapshot.forEach(docSnap => { userData = { id: docSnap.id, ...docSnap.data() }; });
 
-      if (userData.senha !== senha) { alert("Senha incorreta!"); return; }
+      if (userData.senha !== senha) { mostrarNotificacao("Senha incorreta!"); return; }
       currentUser = userData;
       localStorage.setItem('pwa_user', JSON.stringify(currentUser));
       atualizarPresencaOnline(true);
@@ -392,10 +402,14 @@
 
       const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
       document.getElementById('user-role-badge').innerText = `${currentUser.email} (${isAdmin ? 'Admin' : 'Usuário'})`;
+      
       if (isAdmin) {
-        document.getElementById('admin-exclusive-panel').classList.remove('hidden');
+        document.getElementById('drawer-admin-config').classList.remove('hidden');
         document.getElementById('admin-chat-controls').classList.remove('hidden');
         document.getElementById('drawer-admin-usuarios').classList.remove('hidden');
+        document.getElementById('drawer-receita-card').classList.add('hidden'); // Admin configura no formulário acima
+      } else {
+        document.getElementById('drawer-receita-card').classList.remove('hidden');
       }
       ouvirDadosFirebase();
     }
@@ -477,6 +491,7 @@
       appData.receitas[mesSelecionado] = valor;
       await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, despesasFixas: appData.despesasFixas }, { merge: true });
       document.getElementById('input-receita').value = '';
+      mostrarNotificacao("Receita do mês atualizada com sucesso!");
     }
 
     async function adicionarDespesaFixa(e) {
@@ -492,10 +507,11 @@
       await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, despesasFixas: appData.despesasFixas }, { merge: true });
       document.getElementById('fixa-nome').value = '';
       document.getElementById('fixa-valor').value = '';
+      mostrarNotificacao("Despesa fixa adicionada com sucesso!");
     }
 
     async function excluirDespesaFixa(idFixa) {
-      if (!confirm("Remover despesa?")) return;
+      if (!confirm("Remover esta despesa fixa?")) return;
       appData.despesasFixas[mesSelecionado] = appData.despesasFixas[mesSelecionado].filter(f => f.id !== idFixa);
       const { doc, setDoc } = window.firebaseModules;
       await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, despesasFixas: appData.despesasFixas }, { merge: true });
@@ -600,7 +616,7 @@
 
     function renderUI() {
       const receitaMes = appData.receitas[mesSelecionado] || 0;
-      document.getElementById('drawer-valor-receita').innerText = `R$ ${ receitaMes.toFixed(2) }`;
+      document.getElementById('drawer-valor-receita').innerText = `R$ ${receitaMes.toFixed(2)}`;
 
       const fixasMes = appData.despesasFixas[mesSelecionado] || [];
       const totalFixas = fixasMes.reduce((acc, f) => acc + f.valor, 0);
@@ -671,8 +687,7 @@
       });
 
       if (alertaUrgente && !isAdmin) {
-        document.getElementById('modal-texto-aviso').innerText = alertaUrgente;
-        document.getElementById('modal-aviso-central').classList.remove('hidden');
+        mostrarNotificacao(alertaUrgente, "Mensagem do Administrador");
       }
       chatEl.scrollTop = chatEl.scrollHeight;
       renderChart(fixasMes, gastosMes);
