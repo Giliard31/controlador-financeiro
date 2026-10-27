@@ -45,6 +45,25 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col pt-16 overflow-x-hidden">
 
+  <!-- Modal Central Automático para Biometria -->
+  <div id="modal-biometria" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 animate-scaleUp">
+      <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">
+        🔐
+      </div>
+      <div>
+        <h3 class="font-bold text-lg text-slate-800">Autenticação Biométrica</h3>
+        <p class="text-xs text-slate-500 mt-1">Coloque sua digital para entrar no aplicativo</p>
+      </div>
+      <button onclick="fazerLoginBiometria()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3.5 rounded-2xl text-sm shadow transition">
+        Toque para Ler Digital
+      </button>
+      <button onclick="fecharModalBiometria()" class="text-xs text-slate-400 font-medium hover:text-slate-600 pt-1">
+        Usar e-mail e senha normais
+      </button>
+    </div>
+  </div>
+
   <!-- Modal Central Moderno para Alertas / Notificações -->
   <div id="modal-aviso-central" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
@@ -314,20 +333,26 @@
       initServiceWorker();
       checkConnection();
       
-      // Verifica se existe biometria salva e dispara o reconhecimento automaticamente ao abrir
       const credSalva = localStorage.getItem('biometria_credencial');
       if (credSalva) {
         const dadosCred = JSON.parse(credSalva);
         document.getElementById('login-email').value = dadosCred.email;
-        // Aciona a biometria direto sem precisar clicar em nada
+        // Abre o modal de biometria automaticamente na tela logo ao abrir
+        document.getElementById('modal-biometria').classList.remove('hidden');
         setTimeout(() => {
-          fazerLoginBiometriaAutomatico(dadosCred.email);
-        }, 300);
+          fazerLoginBiometria();
+        }, 400);
+      } else {
+        if (!currentUser) document.getElementById('sec-login').classList.remove('hidden');
       }
 
-      if (!currentUser) document.getElementById('sec-login').classList.remove('hidden');
       window.addEventListener('beforeunload', () => { if (currentUser) atualizarPresencaOnline(false); });
     });
+
+    function fecharModalBiometria() {
+      document.getElementById('modal-biometria').classList.add('hidden');
+      document.getElementById('sec-login').classList.remove('hidden');
+    }
 
     function abrirMenuLateral() {
       document.getElementById('drawer-menu').classList.remove('-translate-x-full');
@@ -427,7 +452,12 @@
       verificarSessaoAtiva();
     }
 
-    async function fazerLoginBiometriaAutomatico(emailSalvo) {
+    async function fazerLoginBiometria() {
+      const credSalva = localStorage.getItem('biometria_credencial');
+      if (!credSalva) { fecharModalBiometria(); return; }
+      
+      const dadosCred = JSON.parse(credSalva);
+
       try {
         if (window.PublicKeyCredential) {
           const challenge = new Uint8Array(32);
@@ -440,20 +470,21 @@
             }
           });
 
-          // Se a biometria passar, entra direto
           const { collection, getDocs, query, where } = window.firebaseModules;
-          const q = query(collection(window.db, "usuarios"), where("email", "==", emailSalvo));
+          const q = query(collection(window.db, "usuarios"), where("email", "==", dadosCred.email));
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
             querySnapshot.forEach(docSnap => { currentUser = { id: docSnap.id, ...docSnap.data() }; });
             localStorage.setItem('pwa_user', JSON.stringify(currentUser));
+            document.getElementById('modal-biometria').classList.add('hidden');
             atualizarPresencaOnline(true);
             verificarSessaoAtiva();
+            return;
           }
         }
       } catch (err) {
-        // Se o usuário cancelar a biometria, ele apenas continua na tela de login normal com e-mail/senha
-        console.log("Biometria automática ignorada/cancelada pelo usuário.");
+        // Se cancelar a digital, apenas fecha o modal e deixa a tela de login normal visível
+        fecharModalBiometria();
       }
     }
 
