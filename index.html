@@ -17,6 +17,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, doc, setDoc, updateDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCz3X_YrYt6o9UATBCiH2Gy_ojcf20Y2GU",
@@ -29,9 +30,12 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
 
     window.db = db;
+    window.auth = auth;
     window.firebaseModules = { collection, addDoc, deleteDoc, onSnapshot, doc, setDoc, updateDoc, getDocs, query, where };
+    window.firebaseAuthModules = { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut };
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
 
@@ -44,23 +48,6 @@
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col pt-16 overflow-x-hidden">
-
-  <!-- Tela Estilo Banco (Aparece se já tiver biometria cadastrada no aparelho) -->
-  <div id="sec-biometria-banco" class="hidden fixed inset-0 bg-blue-900 z-50 flex flex-col items-center justify-center p-6 text-white text-center space-y-6">
-    <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center text-4xl shadow-lg border border-white/20 animate-pulse">
-      🔐
-    </div>
-    <div class="space-y-2">
-      <h2 class="text-2xl font-bold tracking-tight">Finanças Pro</h2>
-      <p class="text-xs text-blue-200">Acesse com sua impressão digital</p>
-    </div>
-    <button onclick="fazerLoginBiometriaBanco()" class="w-full max-w-xs bg-white text-blue-900 font-bold py-4 rounded-2xl shadow-xl hover:bg-blue-50 transition text-sm">
-      Toque para Acessar com Digital
-    </button>
-    <button onclick="sairParaLoginNormal()" class="text-xs text-blue-300 underline pt-2">
-      Entrar com e-mail e senha
-    </button>
-  </div>
 
   <!-- Modal Central Moderno para Alertas / Notificações -->
   <div id="modal-aviso-central" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
@@ -199,14 +186,15 @@
   <!-- Container Principal -->
   <main class="max-w-4xl mx-auto w-full p-4 flex-grow space-y-5">
 
-    <!-- Tela de Login Normal -->
-    <section id="sec-login" class="hidden bg-white p-6 rounded-3xl shadow-xl border max-w-sm mx-auto my-6">
+    <!-- Tela de Login / Cadastro / Esqueci a Senha -->
+    <section id="sec-login" class="bg-white p-6 rounded-3xl shadow-xl border max-w-sm mx-auto my-6">
+      
+      <!-- Formulário de Login -->
       <div id="form-login-container">
         <div class="text-center mb-5">
           <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-14 h-14 mx-auto mb-2">
           <h2 class="text-xl font-bold text-slate-800">Acesse o Sistema</h2>
         </div>
-        
         <form onsubmit="handleLogin(event)" class="space-y-3.5 text-sm">
           <div>
             <label class="block font-semibold text-slate-600 mb-1">E-mail</label>
@@ -216,14 +204,17 @@
             <label class="block font-semibold text-slate-600 mb-1">Senha</label>
             <input type="password" id="login-senha" required placeholder="Senha" class="w-full p-3 border rounded-2xl bg-slate-50">
           </div>
-          
-          <button type="submit" class="w-full bg-blue-700 text-white font-semibold py-3 rounded-2xl shadow">Entrar e Ativar Biometria</button>
+          <div class="text-right">
+            <button type="button" onclick="alternarTelaRecuperacao(true)" class="text-xs text-blue-600 font-semibold hover:underline">Esqueci minha senha</button>
+          </div>
+          <button type="submit" class="w-full bg-blue-700 text-white font-semibold py-3 rounded-2xl shadow">Entrar</button>
         </form>
         <div class="mt-5 text-center">
           <button onclick="alternarTelaCadastro(true)" class="text-xs text-blue-700 font-bold">Criar nova conta</button>
         </div>
       </div>
 
+      <!-- Formulário de Cadastro -->
       <div id="form-cadastro-container" class="hidden">
         <div class="text-center mb-5">
           <h2 class="text-xl font-bold text-slate-800">Criar Nova Conta</h2>
@@ -247,6 +238,25 @@
           <button onclick="alternarTelaCadastro(false)" class="text-xs text-slate-600 font-medium">Voltar ao login</button>
         </div>
       </div>
+
+      <!-- Formulário de Recuperação de Senha -->
+      <div id="form-recuperar-container" class="hidden">
+        <div class="text-center mb-5">
+          <h2 class="text-xl font-bold text-slate-800">Recuperar Senha</h2>
+          <p class="text-xs text-slate-500 mt-1">Enviaremos as instruções para o seu e-mail.</p>
+        </div>
+        <form onsubmit="handleRecuperarSenha(event)" class="space-y-3.5 text-sm">
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">E-mail Cadastrado</label>
+            <input type="email" id="rec-email" required placeholder="seu@email.com" class="w-full p-3 border rounded-2xl bg-slate-50">
+          </div>
+          <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-2xl shadow">Enviar E-mail de Recuperação</button>
+        </form>
+        <div class="mt-5 text-center">
+          <button onclick="alternarTelaRecuperacao(false)" class="text-xs text-slate-600 font-medium">Voltar ao login</button>
+        </div>
+      </div>
+
     </section>
 
     <!-- Pendente -->
@@ -316,6 +326,8 @@
       if (currentUser) {
         atualizarPresencaOnline(true);
         verificarSessaoAtiva();
+      } else {
+        document.getElementById('sec-login').classList.remove('hidden');
       }
     });
 
@@ -323,26 +335,8 @@
       initManifest();
       initServiceWorker();
       checkConnection();
-      
-      const credSalva = localStorage.getItem('biometria_credencial');
-      if (credSalva) {
-        // Exibe a tela estilo aplicativo de banco imediatamente
-        document.getElementById('sec-biometria-banco').classList.remove('hidden');
-        // Tenta acionar a biometria automaticamente
-        setTimeout(() => {
-          fazerLoginBiometriaBanco();
-        }, 300);
-      } else {
-        if (!currentUser) document.getElementById('sec-login').classList.remove('hidden');
-      }
-
       window.addEventListener('beforeunload', () => { if (currentUser) atualizarPresencaOnline(false); });
     });
-
-    function sairParaLoginNormal() {
-      document.getElementById('sec-biometria-banco').classList.add('hidden');
-      document.getElementById('sec-login').classList.remove('hidden');
-    }
 
     function abrirMenuLateral() {
       document.getElementById('drawer-menu').classList.remove('-translate-x-full');
@@ -370,8 +364,22 @@
     function alternarTelaCadastro(mostrar) {
       if (mostrar) {
         document.getElementById('form-login-container').classList.add('hidden');
+        document.getElementById('form-recuperar-container').classList.add('hidden');
         document.getElementById('form-cadastro-container').classList.remove('hidden');
       } else {
+        document.getElementById('form-cadastro-container').classList.add('hidden');
+        document.getElementById('form-recuperar-container').classList.add('hidden');
+        document.getElementById('form-login-container').classList.remove('hidden');
+      }
+    }
+
+    function alternarTelaRecuperacao(mostrar) {
+      if (mostrar) {
+        document.getElementById('form-login-container').classList.add('hidden');
+        document.getElementById('form-cadastro-container').classList.add('hidden');
+        document.getElementById('form-recuperar-container').classList.remove('hidden');
+      } else {
+        document.getElementById('form-recuperar-container').classList.add('hidden');
         document.getElementById('form-cadastro-container').classList.add('hidden');
         document.getElementById('form-login-container').classList.remove('hidden');
       }
@@ -384,14 +392,23 @@
       const senha = document.getElementById('cad-senha').value.trim();
 
       const { collection, addDoc, getDocs, query, where } = window.firebaseModules;
+      const { createUserWithEmailAndPassword } = window.firebaseAuthModules;
+
       const q = query(collection(window.db, "usuarios"), where("email", "==", email));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) { mostrarNotificacao("Este e-mail já está cadastrado no sistema."); return; }
 
-      const eAdmin = (email === ADMIN_EMAIL);
-      await addDoc(collection(window.db, "usuarios"), { nome, email, senha, aprovado: eAdmin, isAdmin: eAdmin, online: false, criadoEm: Date.now() });
-      mostrarNotificacao(eAdmin ? "Cadastro de Administrador realizado com sucesso!" : "Solicitação enviada! Aguarde a aprovação do Administrador.");
-      alternarTelaCadastro(false);
+      try {
+        // Cria usuário no Firebase Auth
+        await createUserWithEmailAndPassword(window.auth, email, senha);
+        const eAdmin = (email === ADMIN_EMAIL);
+        await addDoc(collection(window.db, "usuarios"), { nome, email, senha, aprovado: eAdmin, isAdmin: eAdmin, online: false, criadoEm: Date.now() });
+        
+        mostrarNotificacao(eAdmin ? "Cadastro de Administrador realizado com sucesso!" : "Solicitação enviada! Seus dados de acesso foram salvos e o Administrador precisa aprovar seu acesso.");
+        alternarTelaCadastro(false);
+      } catch (err) {
+        mostrarNotificacao("Erro ao cadastrar: " + err.message);
+      }
     }
 
     async function handleLogin(e) {
@@ -400,84 +417,45 @@
       const senha = document.getElementById('login-senha').value.trim();
 
       const { collection, getDocs, query, where } = window.firebaseModules;
-      const q = query(collection(window.db, "usuarios"), where("email", "==", email));
-      const querySnapshot = await getDocs(q);
-      if (querySnapshot.empty) { mostrarNotificacao("E-mail não encontrado. Verifique ou crie uma conta."); return; }
+      const { signInWithEmailAndPassword } = window.firebaseAuthModules;
 
-      let userData = null;
-      querySnapshot.forEach(docSnap => { userData = { id: docSnap.id, ...docSnap.data() }; });
-
-      if (userData.senha !== senha) { mostrarNotificacao("Senha incorreta!"); return; }
-
-      // Salva a credencial para ativar a biometria de banco nas próximas vezes
       try {
-        if (window.PublicKeyCredential) {
-          const challenge = new Uint8Array(32);
-          window.crypto.getRandomValues(challenge);
-          await navigator.credentials.create({
-            publicKey: {
-              challenge: challenge,
-              rp: { name: "Finanças Pro" },
-              user: {
-                id: Uint8Array.from(userData.id, c => c.charCodeAt(0)),
-                name: userData.email,
-                displayName: userData.nome
-              },
-              pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-              timeout: 60000,
-              authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }
-            }
-          });
-          localStorage.setItem('biometria_credencial', JSON.stringify({ email: userData.email, senha: userData.senha }));
+        await signInWithEmailAndPassword(window.auth, email, senha);
+        const q = query(collection(window.db, "usuarios"), where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) { 
+          // Se por ventura estiver no Auth mas não no Firestore
+          const eAdmin = (email === ADMIN_EMAIL);
+          currentUser = { email, aprovado: eAdmin, isAdmin: eAdmin };
+        } else {
+          querySnapshot.forEach(docSnap => { currentUser = { id: docSnap.id, ...docSnap.data() }; });
         }
-      } catch (err) {
-        console.log("Biometria não configurada ou cancelada.");
-      }
 
-      currentUser = userData;
-      localStorage.setItem('pwa_user', JSON.stringify(currentUser));
-      atualizarPresencaOnline(true);
-      verificarSessaoAtiva();
+        localStorage.setItem('pwa_user', JSON.stringify(currentUser));
+        atualizarPresencaOnline(true);
+        verificarSessaoAtiva();
+      } catch (err) {
+        mostrarNotificacao("E-mail ou senha incorretos.");
+      }
     }
 
-    async function fazerLoginBiometriaBanco() {
-      const credSalva = localStorage.getItem('biometria_credencial');
-      if (!credSalva) { sairParaLoginNormal(); return; }
-      
-      const dadosCred = JSON.parse(credSalva);
+    async function handleRecuperarSenha(e) {
+      e.preventDefault();
+      const email = document.getElementById('rec-email').value.trim().toLowerCase();
+      const { sendPasswordResetEmail } = window.firebaseAuthModules;
 
       try {
-        if (window.PublicKeyCredential) {
-          const challenge = new Uint8Array(32);
-          window.crypto.getRandomValues(challenge);
-          await navigator.credentials.get({
-            publicKey: {
-              challenge: challenge,
-              timeout: 60000,
-              userVerification: "required"
-            }
-          });
-
-          const { collection, getDocs, query, where } = window.firebaseModules;
-          const q = query(collection(window.db, "usuarios"), where("email", "==", dadosCred.email));
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-            querySnapshot.forEach(docSnap => { currentUser = { id: docSnap.id, ...docSnap.data() }; });
-            localStorage.setItem('pwa_user', JSON.stringify(currentUser));
-            document.getElementById('sec-biometria-banco').classList.add('hidden');
-            atualizarPresencaOnline(true);
-            verificarSessaoAtiva();
-            return;
-          }
-        }
+        await sendPasswordResetEmail(window.auth, email);
+        mostrarNotificacao("E-mail de recuperação enviado com sucesso! Verifique sua caixa de entrada.");
+        alternarTelaRecuperacao(false);
       } catch (err) {
-        // Se cancelar a digital, apenas deixa a pessoa escolher se quer tentar de novo ou entrar com senha
-        console.log("Biometria cancelada.");
+        mostrarNotificacao("Erro ao enviar e-mail: E-mail não encontrado ou inválido.");
       }
     }
 
     async function atualizarPresencaOnline(status) {
-      if (!currentUser || !window.db) return;
+      if (!currentUser || !currentUser.id || !window.db) return;
       try {
         const { doc, updateDoc } = window.firebaseModules;
         await updateDoc(doc(window.db, "usuarios", currentUser.id), { online: status });
@@ -487,7 +465,6 @@
     function verificarSessaoAtiva() {
       document.getElementById('sec-login').classList.add('hidden');
       document.getElementById('sec-pendente').classList.add('hidden');
-      document.getElementById('sec-biometria-banco').classList.add('hidden');
       const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
       if (!isAdmin && !currentUser.aprovado) {
         document.getElementById('sec-pendente').classList.remove('hidden');
@@ -497,10 +474,11 @@
       showDashboard();
     }
 
-    function logout() {
+    async function logout() {
       atualizarPresencaOnline(false);
       localStorage.removeItem('pwa_user');
-      localStorage.removeItem('biometria_credencial'); // Limpa a biometria ao sair de vez
+      const { signOut } = window.firebaseAuthModules;
+      try { await signOut(window.auth); } catch (e) {}
       location.reload();
     }
 
