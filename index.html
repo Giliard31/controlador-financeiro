@@ -182,13 +182,14 @@
   <!-- Container Principal -->
   <main class="max-w-4xl mx-auto w-full p-4 flex-grow space-y-5">
 
-    <!-- Tela de Login / Cadastro com opção de Digital -->
+    <!-- Tela de Login / Cadastro -->
     <section id="sec-login" class="bg-white p-6 rounded-3xl shadow-xl border max-w-sm mx-auto my-6">
       <div id="form-login-container">
         <div class="text-center mb-5">
           <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-14 h-14 mx-auto mb-2">
           <h2 class="text-xl font-bold text-slate-800">Acesse o Sistema</h2>
         </div>
+        
         <form onsubmit="handleLogin(event)" class="space-y-3.5 text-sm">
           <div>
             <label class="block font-semibold text-slate-600 mb-1">E-mail</label>
@@ -199,15 +200,14 @@
             <input type="password" id="login-senha" required placeholder="Senha" class="w-full p-3 border rounded-2xl bg-slate-50">
           </div>
           
-          <!-- Opção de Biometria / Digital -->
           <div class="flex items-center gap-2 pt-1">
-            <input type="checkbox" id="usar-biometria" class="w-4 h-4 text-blue-600 rounded">
-            <label for="usar-biometria" class="text-xs font-semibold text-slate-700 cursor-pointer flex items-center gap-1">
-              🔓 Entrar com Impressão Digital (Biometria)
+            <input type="checkbox" id="salvar-biometria" class="w-4 h-4 text-blue-600 rounded">
+            <label for="salvar-biometria" class="text-xs font-semibold text-slate-700 cursor-pointer">
+              Ativar entrada automática por digital (Biometria)
             </label>
           </div>
 
-          <button type="submit" class="w-full bg-blue-700 text-white font-semibold py-3 rounded-2xl shadow">Entrar</button>
+          <button type="submit" class="w-full bg-blue-700 text-white font-semibold py-3 rounded-2xl shadow">Entrar com Senha</button>
         </form>
         <div class="mt-5 text-center">
           <button onclick="alternarTelaCadastro(true)" class="text-xs text-blue-700 font-bold">Criar nova conta</button>
@@ -314,7 +314,17 @@
       initServiceWorker();
       checkConnection();
       
-      // Se já houver login salvo e biometria configurada, podemos verificar
+      // Verifica se existe biometria salva e dispara o reconhecimento automaticamente ao abrir
+      const credSalva = localStorage.getItem('biometria_credencial');
+      if (credSalva) {
+        const dadosCred = JSON.parse(credSalva);
+        document.getElementById('login-email').value = dadosCred.email;
+        // Aciona a biometria direto sem precisar clicar em nada
+        setTimeout(() => {
+          fazerLoginBiometriaAutomatico(dadosCred.email);
+        }, 300);
+      }
+
       if (!currentUser) document.getElementById('sec-login').classList.remove('hidden');
       window.addEventListener('beforeunload', () => { if (currentUser) atualizarPresencaOnline(false); });
     });
@@ -373,7 +383,7 @@
       e.preventDefault();
       const email = document.getElementById('login-email').value.trim().toLowerCase();
       const senha = document.getElementById('login-senha').value.trim();
-      const usarBiometria = document.getElementById('usar-biometria').checked;
+      const salvarBiometria = document.getElementById('salvar-biometria').checked;
 
       const { collection, getDocs, query, where } = window.firebaseModules;
       const q = query(collection(window.db, "usuarios"), where("email", "==", email));
@@ -385,8 +395,7 @@
 
       if (userData.senha !== senha) { mostrarNotificacao("Senha incorreta!"); return; }
 
-      // Se marcou para entrar com a digital
-      if (usarBiometria) {
+      if (salvarBiometria) {
         try {
           if (window.PublicKeyCredential) {
             const challenge = new Uint8Array(32);
@@ -405,10 +414,10 @@
                 authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }
               }
             });
-            localStorage.setItem('biometria_ativa_' + email, 'true');
+            localStorage.setItem('biometria_credencial', JSON.stringify({ email: userData.email, senha: userData.senha }));
           }
         } catch (err) {
-          console.log("Biometria ignorada ou não suportada neste aparelho.");
+          console.log("Biometria cancelada ou não configurada.");
         }
       }
 
@@ -416,6 +425,36 @@
       localStorage.setItem('pwa_user', JSON.stringify(currentUser));
       atualizarPresencaOnline(true);
       verificarSessaoAtiva();
+    }
+
+    async function fazerLoginBiometriaAutomatico(emailSalvo) {
+      try {
+        if (window.PublicKeyCredential) {
+          const challenge = new Uint8Array(32);
+          window.crypto.getRandomValues(challenge);
+          await navigator.credentials.get({
+            publicKey: {
+              challenge: challenge,
+              timeout: 60000,
+              userVerification: "required"
+            }
+          });
+
+          // Se a biometria passar, entra direto
+          const { collection, getDocs, query, where } = window.firebaseModules;
+          const q = query(collection(window.db, "usuarios"), where("email", "==", emailSalvo));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            querySnapshot.forEach(docSnap => { currentUser = { id: docSnap.id, ...docSnap.data() }; });
+            localStorage.setItem('pwa_user', JSON.stringify(currentUser));
+            atualizarPresencaOnline(true);
+            verificarSessaoAtiva();
+          }
+        }
+      } catch (err) {
+        // Se o usuário cancelar a biometria, ele apenas continua na tela de login normal com e-mail/senha
+        console.log("Biometria automática ignorada/cancelada pelo usuário.");
+      }
     }
 
     async function atualizarPresencaOnline(status) {
