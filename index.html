@@ -55,7 +55,7 @@
     </div>
   </div>
 
-  <!-- Menu Lateral Deslizante (Gaveta) com Configurações e Histórico -->
+  <!-- Menu Lateral Deslizante (Gaveta) -->
   <div id="drawer-overlay" class="fixed inset-0 bg-black/50 z-50 hidden transition-opacity" onclick="fecharMenuLateral()"></div>
   <div id="drawer-menu" class="fixed top-0 left-0 bottom-0 w-4/5 max-w-xs bg-white z-50 shadow-2xl transform -translate-x-full transition-transform duration-300 flex flex-col">
     <div class="bg-blue-800 text-white p-4 flex justify-between items-center shrink-0">
@@ -68,33 +68,33 @@
     
     <div class="p-4 overflow-y-auto flex-grow space-y-5 text-sm">
       
-      <!-- Painel Exclusivo do Admin na Gaveta (Receita, Renda Extra e Fixas) -->
+      <!-- Painel Exclusivo do Admin na Gaveta -->
       <div id="drawer-admin-config" class="hidden bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl space-y-3">
         <span class="font-bold text-emerald-900 text-xs uppercase tracking-wider block">Gerenciar Finanças</span>
         
-        <form onsubmit="salvarReceita(event)" class="space-y-1.5">
+        <div class="space-y-1.5">
           <label class="text-[11px] font-semibold text-emerald-800 block">Renda Principal:</label>
           <div class="flex gap-1.5">
-            <input type="number" step="0.01" id="input-receita" placeholder="Valor (R$)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
-            <button type="submit" class="bg-emerald-600 text-white px-3 py-2 rounded-xl text-xs font-semibold shrink-0">Salvar</button>
+            <input type="number" step="0.01" id="input-receita" placeholder="Valor (R$)" class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+            <button type="button" onclick="salvarReceita()" class="bg-emerald-600 text-white px-3 py-2 rounded-xl text-xs font-semibold shrink-0">Salvar</button>
           </div>
-        </form>
+        </div>
 
-        <form onsubmit="adicionarRendaExtra(event)" class="space-y-1.5 border-t border-emerald-200 pt-2">
+        <div class="space-y-1.5 border-t border-emerald-200 pt-2">
           <label class="text-[11px] font-semibold text-emerald-800 block">Adicionar Renda Extra:</label>
-          <input type="text" id="extra-nome" placeholder="Descrição (Ex: Corrida)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+          <input type="text" id="extra-nome" placeholder="Descrição (Ex: Corrida)" class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
           <div class="flex gap-1.5">
-            <input type="number" step="0.01" id="extra-valor" placeholder="Valor (R$)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
-            <button type="submit" class="bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shrink-0">Adicionar</button>
+            <input type="number" step="0.01" id="extra-valor" placeholder="Valor (R$)" class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+            <button type="button" onclick="adicionarRendaExtra()" class="bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shrink-0">Adicionar</button>
           </div>
-        </form>
+        </div>
 
         <div class="border-t border-emerald-200 pt-2 space-y-1.5">
           <label class="text-[11px] font-semibold text-emerald-800 block">Adicionar Despesa Fixa:</label>
-          <input type="text" id="fixa-nome" placeholder="Nome (Ex: Aluguel)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+          <input type="text" id="fixa-nome" placeholder="Nome (Ex: Aluguel)" class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
           <div class="flex gap-1.5">
-            <input type="number" step="0.01" id="fixa-valor" placeholder="Valor (R$)" required class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
-            <button type="submit" class="bg-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shrink-0">Fixar</button>
+            <input type="number" step="0.01" id="fixa-valor" placeholder="Valor (R$)" class="w-full p-2 border border-emerald-300 rounded-xl bg-white text-xs">
+            <button type="button" onclick="adicionarDespesaFixa()" class="bg-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shrink-0">Fixar</button>
           </div>
         </div>
       </div>
@@ -105,9 +105,7 @@
           <span class="font-bold text-emerald-800 text-xs uppercase tracking-wider block">Receita Total do Mês</span>
           <div id="drawer-valor-receita" class="text-lg font-extrabold text-emerald-900 mt-0.5">R$ 0,00</div>
         </div>
-        <div id="drawer-lista-extras-user" class="border-t border-emerald-200 pt-2 space-y-1">
-          <!-- Rendas extras cadastradas aparecem aqui -->
-        </div>
+        <div id="drawer-lista-extras-user" class="border-t border-emerald-200 pt-2 space-y-1"></div>
       </div>
 
       <div>
@@ -184,7 +182,7 @@
   <!-- Container Principal -->
   <main class="max-w-4xl mx-auto w-full p-4 flex-grow space-y-5">
 
-    <!-- Tela de Login / Cadastro -->
+    <!-- Tela de Login / Cadastro com opção de Digital -->
     <section id="sec-login" class="bg-white p-6 rounded-3xl shadow-xl border max-w-sm mx-auto my-6">
       <div id="form-login-container">
         <div class="text-center mb-5">
@@ -200,6 +198,15 @@
             <label class="block font-semibold text-slate-600 mb-1">Senha</label>
             <input type="password" id="login-senha" required placeholder="Senha" class="w-full p-3 border rounded-2xl bg-slate-50">
           </div>
+          
+          <!-- Opção de Biometria / Digital -->
+          <div class="flex items-center gap-2 pt-1">
+            <input type="checkbox" id="usar-biometria" class="w-4 h-4 text-blue-600 rounded">
+            <label for="usar-biometria" class="text-xs font-semibold text-slate-700 cursor-pointer flex items-center gap-1">
+              🔓 Entrar com Impressão Digital (Biometria)
+            </label>
+          </div>
+
           <button type="submit" class="w-full bg-blue-700 text-white font-semibold py-3 rounded-2xl shadow">Entrar</button>
         </form>
         <div class="mt-5 text-center">
@@ -306,6 +313,8 @@
       initManifest();
       initServiceWorker();
       checkConnection();
+      
+      // Se já houver login salvo e biometria configurada, podemos verificar
       if (!currentUser) document.getElementById('sec-login').classList.remove('hidden');
       window.addEventListener('beforeunload', () => { if (currentUser) atualizarPresencaOnline(false); });
     });
@@ -364,6 +373,7 @@
       e.preventDefault();
       const email = document.getElementById('login-email').value.trim().toLowerCase();
       const senha = document.getElementById('login-senha').value.trim();
+      const usarBiometria = document.getElementById('usar-biometria').checked;
 
       const { collection, getDocs, query, where } = window.firebaseModules;
       const q = query(collection(window.db, "usuarios"), where("email", "==", email));
@@ -374,6 +384,34 @@
       querySnapshot.forEach(docSnap => { userData = { id: docSnap.id, ...docSnap.data() }; });
 
       if (userData.senha !== senha) { mostrarNotificacao("Senha incorreta!"); return; }
+
+      // Se marcou para entrar com a digital
+      if (usarBiometria) {
+        try {
+          if (window.PublicKeyCredential) {
+            const challenge = new Uint8Array(32);
+            window.crypto.getRandomValues(challenge);
+            await navigator.credentials.create({
+              publicKey: {
+                challenge: challenge,
+                rp: { name: "Finanças Pro" },
+                user: {
+                  id: Uint8Array.from(userData.id, c => c.charCodeAt(0)),
+                  name: userData.email,
+                  displayName: userData.nome
+                },
+                pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                timeout: 60000,
+                authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }
+              }
+            });
+            localStorage.setItem('biometria_ativa_' + email, 'true');
+          }
+        } catch (err) {
+          console.log("Biometria ignorada ou não suportada neste aparelho.");
+        }
+      }
+
       currentUser = userData;
       localStorage.setItem('pwa_user', JSON.stringify(currentUser));
       atualizarPresencaOnline(true);
@@ -498,22 +536,20 @@
       });
     }
 
-    async function salvarReceita(e) {
-      e.preventDefault();
+    async function salvarReceita() {
       const valor = parseFloat(document.getElementById('input-receita').value);
-      if (isNaN(valor)) return;
+      if (isNaN(valor)) { mostrarNotificacao("Digite um valor válido para a renda."); return; }
       const { doc, setDoc } = window.firebaseModules;
       appData.receitas[mesSelecionado] = valor;
       await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, rendasExtras: appData.rendasExtras, despesasFixas: appData.despesasFixas }, { merge: true });
       document.getElementById('input-receita').value = '';
-      mostrarNotificacao("Renda principal atualizada!");
+      mostrarNotificacao("Renda principal atualizada com sucesso!");
     }
 
-    async function adicionarRendaExtra(e) {
-      e.preventDefault();
+    async function adicionarRendaExtra() {
       const nome = document.getElementById('extra-nome').value.trim();
       const valor = parseFloat(document.getElementById('extra-valor').value);
-      if (!nome || isNaN(valor)) return;
+      if (!nome || isNaN(valor)) { mostrarNotificacao("Preencha a descrição e o valor da renda extra."); return; }
 
       if (!appData.rendasExtras[mesSelecionado]) appData.rendasExtras[mesSelecionado] = [];
       appData.rendasExtras[mesSelecionado].push({ id: Date.now(), nome, valor });
@@ -532,11 +568,10 @@
       await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, rendasExtras: appData.rendasExtras, despesasFixas: appData.despesasFixas }, { merge: true });
     }
 
-    async function adicionarDespesaFixa(e) {
-      e.preventDefault();
+    async function adicionarDespesaFixa() {
       const nome = document.getElementById('fixa-nome').value.trim();
       const valor = parseFloat(document.getElementById('fixa-valor').value);
-      if (!nome || isNaN(valor)) return;
+      if (!nome || isNaN(valor)) { mostrarNotificacao("Preencha o nome e o valor da despesa fixa."); return; }
 
       if (!appData.despesasFixas[mesSelecionado]) appData.despesasFixas[mesSelecionado] = [];
       appData.despesasFixas[mesSelecionado].push({ id: Date.now(), nome, valor });
@@ -545,7 +580,7 @@
       await setDoc(doc(window.db, "financeiro", "config"), { receitas: appData.receitas, rendasExtras: appData.rendasExtras, despesasFixas: appData.despesasFixas }, { merge: true });
       document.getElementById('fixa-nome').value = '';
       document.getElementById('fixa-valor').value = '';
-      mostrarNotificacao("Despesa fixa adicionada com sucesso!");
+      mostrarNotificacao("Despesa fixa fixada com sucesso!");
     }
 
     async function excluirDespesaFixa(idFixa) {
@@ -660,7 +695,6 @@
 
       document.getElementById('drawer-valor-receita').innerText = `R$ ${receitaTotal.toFixed(2)}`;
 
-      // Renderiza lista de extras no menu lateral
       const listaExtrasDiv = document.getElementById('drawer-lista-extras-user');
       if (listaExtrasDiv) {
         listaExtrasDiv.innerHTML = '';
