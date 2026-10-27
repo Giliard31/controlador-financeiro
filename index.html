@@ -45,23 +45,21 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col pt-16 overflow-x-hidden">
 
-  <!-- Modal Central Automático para Biometria -->
-  <div id="modal-biometria" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 animate-scaleUp">
-      <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">
-        🔐
-      </div>
-      <div>
-        <h3 class="font-bold text-lg text-slate-800">Autenticação Biométrica</h3>
-        <p class="text-xs text-slate-500 mt-1">Coloque sua digital para entrar no aplicativo</p>
-      </div>
-      <button onclick="fazerLoginBiometria()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3.5 rounded-2xl text-sm shadow transition">
-        Toque para Ler Digital
-      </button>
-      <button onclick="fecharModalBiometria()" class="text-xs text-slate-400 font-medium hover:text-slate-600 pt-1">
-        Usar e-mail e senha normais
-      </button>
+  <!-- Tela Estilo Banco (Aparece se já tiver biometria cadastrada no aparelho) -->
+  <div id="sec-biometria-banco" class="hidden fixed inset-0 bg-blue-900 z-50 flex flex-col items-center justify-center p-6 text-white text-center space-y-6">
+    <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center text-4xl shadow-lg border border-white/20 animate-pulse">
+      🔐
     </div>
+    <div class="space-y-2">
+      <h2 class="text-2xl font-bold tracking-tight">Finanças Pro</h2>
+      <p class="text-xs text-blue-200">Acesse com sua impressão digital</p>
+    </div>
+    <button onclick="fazerLoginBiometriaBanco()" class="w-full max-w-xs bg-white text-blue-900 font-bold py-4 rounded-2xl shadow-xl hover:bg-blue-50 transition text-sm">
+      Toque para Acessar com Digital
+    </button>
+    <button onclick="sairParaLoginNormal()" class="text-xs text-blue-300 underline pt-2">
+      Entrar com e-mail e senha
+    </button>
   </div>
 
   <!-- Modal Central Moderno para Alertas / Notificações -->
@@ -201,8 +199,8 @@
   <!-- Container Principal -->
   <main class="max-w-4xl mx-auto w-full p-4 flex-grow space-y-5">
 
-    <!-- Tela de Login / Cadastro -->
-    <section id="sec-login" class="bg-white p-6 rounded-3xl shadow-xl border max-w-sm mx-auto my-6">
+    <!-- Tela de Login Normal -->
+    <section id="sec-login" class="hidden bg-white p-6 rounded-3xl shadow-xl border max-w-sm mx-auto my-6">
       <div id="form-login-container">
         <div class="text-center mb-5">
           <img src="https://cdn-icons-png.flaticon.com/512/3135/3135706.png" class="w-14 h-14 mx-auto mb-2">
@@ -219,14 +217,7 @@
             <input type="password" id="login-senha" required placeholder="Senha" class="w-full p-3 border rounded-2xl bg-slate-50">
           </div>
           
-          <div class="flex items-center gap-2 pt-1">
-            <input type="checkbox" id="salvar-biometria" class="w-4 h-4 text-blue-600 rounded">
-            <label for="salvar-biometria" class="text-xs font-semibold text-slate-700 cursor-pointer">
-              Ativar entrada automática por digital (Biometria)
-            </label>
-          </div>
-
-          <button type="submit" class="w-full bg-blue-700 text-white font-semibold py-3 rounded-2xl shadow">Entrar com Senha</button>
+          <button type="submit" class="w-full bg-blue-700 text-white font-semibold py-3 rounded-2xl shadow">Entrar e Ativar Biometria</button>
         </form>
         <div class="mt-5 text-center">
           <button onclick="alternarTelaCadastro(true)" class="text-xs text-blue-700 font-bold">Criar nova conta</button>
@@ -335,13 +326,12 @@
       
       const credSalva = localStorage.getItem('biometria_credencial');
       if (credSalva) {
-        const dadosCred = JSON.parse(credSalva);
-        document.getElementById('login-email').value = dadosCred.email;
-        // Abre o modal de biometria automaticamente na tela logo ao abrir
-        document.getElementById('modal-biometria').classList.remove('hidden');
+        // Exibe a tela estilo aplicativo de banco imediatamente
+        document.getElementById('sec-biometria-banco').classList.remove('hidden');
+        // Tenta acionar a biometria automaticamente
         setTimeout(() => {
-          fazerLoginBiometria();
-        }, 400);
+          fazerLoginBiometriaBanco();
+        }, 300);
       } else {
         if (!currentUser) document.getElementById('sec-login').classList.remove('hidden');
       }
@@ -349,8 +339,8 @@
       window.addEventListener('beforeunload', () => { if (currentUser) atualizarPresencaOnline(false); });
     });
 
-    function fecharModalBiometria() {
-      document.getElementById('modal-biometria').classList.add('hidden');
+    function sairParaLoginNormal() {
+      document.getElementById('sec-biometria-banco').classList.add('hidden');
       document.getElementById('sec-login').classList.remove('hidden');
     }
 
@@ -408,7 +398,6 @@
       e.preventDefault();
       const email = document.getElementById('login-email').value.trim().toLowerCase();
       const senha = document.getElementById('login-senha').value.trim();
-      const salvarBiometria = document.getElementById('salvar-biometria').checked;
 
       const { collection, getDocs, query, where } = window.firebaseModules;
       const q = query(collection(window.db, "usuarios"), where("email", "==", email));
@@ -420,30 +409,29 @@
 
       if (userData.senha !== senha) { mostrarNotificacao("Senha incorreta!"); return; }
 
-      if (salvarBiometria) {
-        try {
-          if (window.PublicKeyCredential) {
-            const challenge = new Uint8Array(32);
-            window.crypto.getRandomValues(challenge);
-            await navigator.credentials.create({
-              publicKey: {
-                challenge: challenge,
-                rp: { name: "Finanças Pro" },
-                user: {
-                  id: Uint8Array.from(userData.id, c => c.charCodeAt(0)),
-                  name: userData.email,
-                  displayName: userData.nome
-                },
-                pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-                timeout: 60000,
-                authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }
-              }
-            });
-            localStorage.setItem('biometria_credencial', JSON.stringify({ email: userData.email, senha: userData.senha }));
-          }
-        } catch (err) {
-          console.log("Biometria cancelada ou não configurada.");
+      // Salva a credencial para ativar a biometria de banco nas próximas vezes
+      try {
+        if (window.PublicKeyCredential) {
+          const challenge = new Uint8Array(32);
+          window.crypto.getRandomValues(challenge);
+          await navigator.credentials.create({
+            publicKey: {
+              challenge: challenge,
+              rp: { name: "Finanças Pro" },
+              user: {
+                id: Uint8Array.from(userData.id, c => c.charCodeAt(0)),
+                name: userData.email,
+                displayName: userData.nome
+              },
+              pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+              timeout: 60000,
+              authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }
+            }
+          });
+          localStorage.setItem('biometria_credencial', JSON.stringify({ email: userData.email, senha: userData.senha }));
         }
+      } catch (err) {
+        console.log("Biometria não configurada ou cancelada.");
       }
 
       currentUser = userData;
@@ -452,9 +440,9 @@
       verificarSessaoAtiva();
     }
 
-    async function fazerLoginBiometria() {
+    async function fazerLoginBiometriaBanco() {
       const credSalva = localStorage.getItem('biometria_credencial');
-      if (!credSalva) { fecharModalBiometria(); return; }
+      if (!credSalva) { sairParaLoginNormal(); return; }
       
       const dadosCred = JSON.parse(credSalva);
 
@@ -476,15 +464,15 @@
           if (!querySnapshot.empty) {
             querySnapshot.forEach(docSnap => { currentUser = { id: docSnap.id, ...docSnap.data() }; });
             localStorage.setItem('pwa_user', JSON.stringify(currentUser));
-            document.getElementById('modal-biometria').classList.add('hidden');
+            document.getElementById('sec-biometria-banco').classList.add('hidden');
             atualizarPresencaOnline(true);
             verificarSessaoAtiva();
             return;
           }
         }
       } catch (err) {
-        // Se cancelar a digital, apenas fecha o modal e deixa a tela de login normal visível
-        fecharModalBiometria();
+        // Se cancelar a digital, apenas deixa a pessoa escolher se quer tentar de novo ou entrar com senha
+        console.log("Biometria cancelada.");
       }
     }
 
@@ -499,6 +487,7 @@
     function verificarSessaoAtiva() {
       document.getElementById('sec-login').classList.add('hidden');
       document.getElementById('sec-pendente').classList.add('hidden');
+      document.getElementById('sec-biometria-banco').classList.add('hidden');
       const isAdmin = (currentUser.email === ADMIN_EMAIL || currentUser.isAdmin);
       if (!isAdmin && !currentUser.aprovado) {
         document.getElementById('sec-pendente').classList.remove('hidden');
@@ -511,6 +500,7 @@
     function logout() {
       atualizarPresencaOnline(false);
       localStorage.removeItem('pwa_user');
+      localStorage.removeItem('biometria_credencial'); // Limpa a biometria ao sair de vez
       location.reload();
     }
 
