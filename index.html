@@ -17,7 +17,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, doc, setDoc, updateDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCz3X_YrYt6o9UATBCiH2Gy_ojcf20Y2GU",
@@ -35,7 +35,7 @@
     window.db = db;
     window.auth = auth;
     window.firebaseModules = { collection, addDoc, deleteDoc, onSnapshot, doc, setDoc, updateDoc, getDocs, query, where };
-    window.firebaseAuthModules = { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut };
+    window.firebaseAuthModules = { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut };
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
 
@@ -186,7 +186,7 @@
   <!-- Container Principal -->
   <main class="max-w-4xl mx-auto w-full p-4 flex-grow space-y-5">
 
-    <!-- Tela de Login / Cadastro / Esqueci a Senha -->
+    <!-- Tela de Login / Cadastro -->
     <section id="sec-login" class="bg-white p-6 rounded-3xl shadow-xl border max-w-sm mx-auto my-6">
       
       <!-- Formulário de Login -->
@@ -203,9 +203,6 @@
           <div>
             <label class="block font-semibold text-slate-600 mb-1">Senha</label>
             <input type="password" id="login-senha" required placeholder="Senha" class="w-full p-3 border rounded-2xl bg-slate-50">
-          </div>
-          <div class="text-right">
-            <button type="button" onclick="alternarTelaRecuperacao(true)" class="text-xs text-blue-600 font-semibold hover:underline">Esqueci minha senha</button>
           </div>
           <button type="submit" class="w-full bg-blue-700 text-white font-semibold py-3 rounded-2xl shadow">Entrar</button>
         </form>
@@ -236,24 +233,6 @@
         </form>
         <div class="mt-5 text-center">
           <button onclick="alternarTelaCadastro(false)" class="text-xs text-slate-600 font-medium">Voltar ao login</button>
-        </div>
-      </div>
-
-      <!-- Formulário de Recuperação de Senha -->
-      <div id="form-recuperar-container" class="hidden">
-        <div class="text-center mb-5">
-          <h2 class="text-xl font-bold text-slate-800">Recuperar Senha</h2>
-          <p class="text-xs text-slate-500 mt-1">Enviaremos as instruções para o seu e-mail.</p>
-        </div>
-        <form onsubmit="handleRecuperarSenha(event)" class="space-y-3.5 text-sm">
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">E-mail Cadastrado</label>
-            <input type="email" id="rec-email" required placeholder="seu@email.com" class="w-full p-3 border rounded-2xl bg-slate-50">
-          </div>
-          <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-2xl shadow">Enviar E-mail de Recuperação</button>
-        </form>
-        <div class="mt-5 text-center">
-          <button onclick="alternarTelaRecuperacao(false)" class="text-xs text-slate-600 font-medium">Voltar ao login</button>
         </div>
       </div>
 
@@ -364,22 +343,8 @@
     function alternarTelaCadastro(mostrar) {
       if (mostrar) {
         document.getElementById('form-login-container').classList.add('hidden');
-        document.getElementById('form-recuperar-container').classList.add('hidden');
         document.getElementById('form-cadastro-container').classList.remove('hidden');
       } else {
-        document.getElementById('form-cadastro-container').classList.add('hidden');
-        document.getElementById('form-recuperar-container').classList.add('hidden');
-        document.getElementById('form-login-container').classList.remove('hidden');
-      }
-    }
-
-    function alternarTelaRecuperacao(mostrar) {
-      if (mostrar) {
-        document.getElementById('form-login-container').classList.add('hidden');
-        document.getElementById('form-cadastro-container').classList.add('hidden');
-        document.getElementById('form-recuperar-container').classList.remove('hidden');
-      } else {
-        document.getElementById('form-recuperar-container').classList.add('hidden');
         document.getElementById('form-cadastro-container').classList.add('hidden');
         document.getElementById('form-login-container').classList.remove('hidden');
       }
@@ -399,7 +364,6 @@
       if (!querySnapshot.empty) { mostrarNotificacao("Este e-mail já está cadastrado no sistema."); return; }
 
       try {
-        // Cria usuário no Firebase Auth
         await createUserWithEmailAndPassword(window.auth, email, senha);
         const eAdmin = (email === ADMIN_EMAIL);
         await addDoc(collection(window.db, "usuarios"), { nome, email, senha, aprovado: eAdmin, isAdmin: eAdmin, online: false, criadoEm: Date.now() });
@@ -425,7 +389,6 @@
         const querySnapshot = await getDocs(q);
         
         if (querySnapshot.empty) { 
-          // Se por ventura estiver no Auth mas não no Firestore
           const eAdmin = (email === ADMIN_EMAIL);
           currentUser = { email, aprovado: eAdmin, isAdmin: eAdmin };
         } else {
@@ -437,20 +400,6 @@
         verificarSessaoAtiva();
       } catch (err) {
         mostrarNotificacao("E-mail ou senha incorretos.");
-      }
-    }
-
-    async function handleRecuperarSenha(e) {
-      e.preventDefault();
-      const email = document.getElementById('rec-email').value.trim().toLowerCase();
-      const { sendPasswordResetEmail } = window.firebaseAuthModules;
-
-      try {
-        await sendPasswordResetEmail(window.auth, email);
-        mostrarNotificacao("E-mail de recuperação enviado com sucesso! Verifique sua caixa de entrada.");
-        alternarTelaRecuperacao(false);
-      } catch (err) {
-        mostrarNotificacao("Erro ao enviar e-mail: E-mail não encontrado ou inválido.");
       }
     }
 
